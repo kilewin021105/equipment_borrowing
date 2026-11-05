@@ -1,0 +1,21 @@
+{
+  "name": "campusequip-server",
+  "version": "1.0.0",
+  "description": "CampusEquip Backend API",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node db/seed.js",
+    "transfer:supabase": "node scripts/transfer_to_supabase.js",
+    "test": "node tests/test_api.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

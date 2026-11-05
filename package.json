@@ -1,0 +1,27 @@
+{
+  "name": "campusequip-system",
+  "version": "1.0.0",
+  "description": "College Equipment Borrowing and Inventory Management System",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "seed": "node server/db/seed.js",
+    "transfer:supabase": "node server/scripts/transfer_to_supabase.js",
+    "dev:server": "node server/server.js",
+    "dev:client": "npm --prefix client run dev",
+    "build": "npm --prefix client run build",
+    "test": "node server/tests/test_api.js",
+    "test:all": "node server/tests/test_api.js && node server/tests/verify_frontend_and_api.js"
+  },
+  "keywords": [
+    "college",
+    "equipment",
+    "borrowing-system",
+    "inventory-management",
+    "university-laboratory",
+    "custodian",
+    "full-stack"
+  ],
+  "author": "CampusEquip Team",
+  "license": "MIT"
+}
