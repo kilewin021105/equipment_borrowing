@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Package, Lock, Mail, User, Phone, AlertCircle, ArrowRight, Shield, Layers, UserCheck } from 'lucide-react';
+import { Package, Lock, Mail, User, Phone, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function RegisterPage({ setActivePage }) {
   const { register } = useAuth();
-  const [role, setRole] = useState('admin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,18 +30,11 @@ export function RegisterPage({ setActivePage }) {
         password,
         student_id: studentId.trim() || null,
         department,
-        phone: phone.trim() || null,
-        role
+        phone: phone.trim() || null
       });
 
-      // Auto-navigate to appropriate portal based on chosen role
-      if (role === 'admin') {
-        setActivePage('admin');
-      } else if (role === 'staff') {
-        setActivePage('staff');
-      } else {
-        setActivePage('catalog');
-      }
+      // Regular accounts are created as borrowers and routed to the equipment catalog
+      setActivePage('catalog');
     } catch (err) {
       setError(err.message || 'Registration failed.');
     } finally {
@@ -57,9 +49,9 @@ export function RegisterPage({ setActivePage }) {
         <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white mx-auto shadow-md shadow-blue-500/20">
           <Package className="w-6 h-6" />
         </div>
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Create Your Campus Account</h2>
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Create Institutional Account</h2>
         <p className="text-xs text-slate-500">
-          Set up your institutional profile to borrow lab assets, approve equipment requests, or manage inventory.
+          Register your student or faculty profile to browse and borrow college laboratory equipment.
         </p>
       </div>
 
@@ -72,59 +64,6 @@ export function RegisterPage({ setActivePage }) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         
-        {/* Role Selector Cards - Clean: Admin, Lab Custodian, Student/Faculty */}
-        <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-            Select Account Role *
-          </label>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-            
-            {/* Admin */}
-            <button
-              type="button"
-              onClick={() => setRole('admin')}
-              className={`py-3 px-4 rounded-2xl border text-center font-bold transition flex items-center justify-center gap-2 ${
-                role === 'admin'
-                  ? 'bg-purple-50 border-purple-500 ring-2 ring-purple-400 text-purple-950 shadow-xs'
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              <Shield className={`w-4 h-4 ${role === 'admin' ? 'text-purple-600' : 'text-slate-400'}`} />
-              <span>Admin</span>
-            </button>
-
-            {/* Lab Custodian */}
-            <button
-              type="button"
-              onClick={() => setRole('staff')}
-              className={`py-3 px-4 rounded-2xl border text-center font-bold transition flex items-center justify-center gap-2 ${
-                role === 'staff'
-                  ? 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-400 text-indigo-950 shadow-xs'
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              <Layers className={`w-4 h-4 ${role === 'staff' ? 'text-indigo-600' : 'text-slate-400'}`} />
-              <span>Lab Custodian</span>
-            </button>
-
-            {/* Student/Faculty */}
-            <button
-              type="button"
-              onClick={() => setRole('borrower')}
-              className={`py-3 px-4 rounded-2xl border text-center font-bold transition flex items-center justify-center gap-2 ${
-                role === 'borrower'
-                  ? 'bg-blue-50 border-blue-500 ring-2 ring-blue-400 text-blue-950 shadow-xs'
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              <UserCheck className={`w-4 h-4 ${role === 'borrower' ? 'text-blue-600' : 'text-slate-400'}`} />
-              <span>Student/Faculty</span>
-            </button>
-
-          </div>
-        </div>
-
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
             Full Name *
@@ -234,23 +173,31 @@ export function RegisterPage({ setActivePage }) {
             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
             <>
-              Create Account & Enter Portal
+              Register & Browse Equipment
               <ArrowRight className="w-4 h-4" />
             </>
           )}
         </button>
       </form>
 
-      <div className="text-center pt-2 border-t border-slate-100">
-        <p className="text-xs text-slate-500">
+      <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+        <p className="text-slate-500">
           Already registered?{' '}
           <button
             onClick={() => setActivePage('login')}
             className="text-blue-600 font-bold hover:underline"
           >
-            Sign in to your account
+            Sign In
           </button>
         </p>
+
+        <button
+          onClick={() => setActivePage('admin-login')}
+          className="text-slate-500 hover:text-purple-700 font-semibold flex items-center gap-1 transition"
+        >
+          <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+          Admin Portal
+        </button>
       </div>
     </div>
   );

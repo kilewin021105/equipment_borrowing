@@ -6,6 +6,7 @@ import { BorrowerDashboard } from './pages/BorrowerDashboard';
 import { StaffDashboard } from './pages/StaffDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { LoginPage } from './pages/LoginPage';
+import { AdminLoginPage } from './pages/AdminLoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { DigitalBorrowSlip } from './components/DigitalBorrowSlip';
@@ -66,23 +67,32 @@ function MainApp() {
           user && user.role === 'admin' ? (
             <AdminDashboard />
           ) : (
-            <div className="p-12 text-center bg-white rounded-3xl border border-slate-200">
-              <ShieldCheck className="w-12 h-12 text-rose-500 mx-auto mb-3" />
+            <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 max-w-lg mx-auto my-12 shadow-sm">
+              <ShieldCheck className="w-12 h-12 text-purple-600 mx-auto mb-3" />
               <h2 className="text-lg font-bold text-slate-900">Administrator Access Required</h2>
-              <p className="text-xs text-slate-500 mt-1 mb-4">
-                You must be logged in as an administrator to access the system control panel.
+              <p className="text-xs text-slate-500 mt-1 mb-6">
+                You must authenticate with system administrator credentials to access the central administration console.
               </p>
-              <button
-                onClick={() => setActivePage('catalog')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold"
-              >
-                Return to Catalog
-              </button>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setActivePage('admin-login')}
+                  className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                >
+                  Enter Admin Portal
+                </button>
+                <button
+                  onClick={() => setActivePage('catalog')}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
+                >
+                  Return to Catalog
+                </button>
+              </div>
             </div>
           )
         )}
 
         {activePage === 'login' && <LoginPage setActivePage={setActivePage} />}
+        {activePage === 'admin-login' && <AdminLoginPage setActivePage={setActivePage} />}
         {activePage === 'register' && <RegisterPage setActivePage={setActivePage} />}
         {activePage === 'profile' && (
           user ? <ProfilePage /> : <LoginPage setActivePage={setActivePage} />

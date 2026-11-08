@@ -26,28 +26,36 @@ exports.register = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'An account with this email already exists.' });
     }
 
-    // Determine role (default to borrower unless explicitly permitted or seeded)
-    const allowedRoles = ['borrower', 'staff', 'admin'];
-    const assignedRole = allowedRoles.includes(role) ? role : 'borrower';
+    // Determine role: Public registration always defaults to 'borrower' (Student / Faculty)
+    // Only allow 'admin' if 0 administrators exist (first-time setup) or if authenticated admin invites.
+    // 'staff' (Lab Custodian) must be appointed by an Administrator.
+    let assignedRole = 'borrower';
+    const adminCount = Number(db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get().count || 0);
 
-    // Role Limitation / Quota Enforcements:
-    // Administrator: max 5 users
-    // Lab Custodian: max 7 users
-    if (assignedRole === 'admin') {
-      const adminCount = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get().count;
-      if (adminCount >= 5) {
-        return res.status(400).json({
-          success: false,
-          message: 'The maximum quota of 5 Administrator accounts has been reached. Please choose another role or contact an administrator.'
-        });
+    if (role === 'admin') {
+      if (adminCount === 0 || (req.user && req.user.role === 'admin')) {
+        if (adminCount >= 5) {
+          return res.status(400).json({
+            success: false,
+            message: 'The maximum quota of 5 Administrator accounts has been reached.'
+          });
+        }
+        assignedRole = 'admin';
+      } else {
+        assignedRole = 'borrower';
       }
-    } else if (assignedRole === 'staff') {
-      const staffCount = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'staff'").get().count;
-      if (staffCount >= 7) {
-        return res.status(400).json({
-          success: false,
-          message: 'The maximum quota of 7 Lab Custodian accounts has been reached. Please choose another role.'
-        });
+    } else if (role === 'staff') {
+      if (req.user && req.user.role === 'admin') {
+        const staffCount = Number(db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'staff'").get().count || 0);
+        if (staffCount >= 7) {
+          return res.status(400).json({
+            success: false,
+            message: 'The maximum quota of 7 Lab Custodian accounts has been reached.'
+          });
+        }
+        assignedRole = 'staff';
+      } else {
+        assignedRole = 'borrower';
       }
     }
 
@@ -298,5 +306,166 @@ exports.getRoleLimits = (req, res, next) => {
     next(err);
   }
 };
+
+exports.getAdminStatus = (req, res, next) => {
+  try {
+    const adminCount = Number(db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get().count || 0);
+    res.json({
+      success: true,
+      hasAdmin: adminCount > 0,
+      adminCount,
+      maxAdmins: 5
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.adminLogin = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Administrator email and password are required.' });
+    }
+
+    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase().trim());
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Invalid administrator credentials.' });
+    }
+
+    if (user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access Denied: This portal is strictly restricted to System Administrators. Students and Custodians must sign in via the Student & Faculty Portal.'
+      });
+    }
+
+    if (user.status === 'suspended') {
+      return res.status(403).json({ success: false, message: 'Administrator account is suspended.' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Invalid administrator credentials.' });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    logAudit(user.id, 'ADMIN_LOGIN', 'users', user.id, { email: user.email });
+
+    res.json({
+      success: true,
+      message: 'Administrator authentication successful!',
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department,
+        status: user.status
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.setupInitialAdmin = async (req, res, next) => {
+  try {
+    const adminCount = Number(db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get().count || 0);
+    if (adminCount >= 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'Maximum administrator limit (5) has already been reached.'
+      });
+    }
+
+    const { name, email, password, department, phone, student_id } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: 'Name, institutional email, and password are required.' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
+    }
+
+    const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase().trim());
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'An account with this email already exists.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const stmt = db.prepare(`
+      INSERT INTO users (name, email, password, role, student_id, department, phone, status)
+      VALUES (?, ?, ?, 'admin', ?, ?, ?, 'active')
+    `);
+
+    const result = stmt.run(
+      name.trim(),
+      email.toLowerCase().trim(),
+      hashedPassword,
+      student_id ? student_id.trim() : 'ADM-MASTER',
+      department ? department.trim() : 'Bachelor Science of information technology(BSIT)',
+      phone ? phone.trim() : null
+    );
+
+    const userId = Number(result.lastInsertRowid);
+
+    // Sync to Supabase
+    if (process.env.SUPABASE_URL) {
+      try {
+        const { supabase } = require('../db/supabaseClient');
+        await supabase.from('users').upsert({
+          id: userId,
+          name: name.trim(),
+          email: email.toLowerCase().trim(),
+          password: hashedPassword,
+          role: 'admin',
+          student_id: student_id ? student_id.trim() : 'ADM-MASTER',
+          department: department ? department.trim() : 'Bachelor Science of information technology(BSIT)',
+          phone: phone ? phone.trim() : null,
+          status: 'active'
+        });
+      } catch (sbErr) {
+        console.warn('Notice: Background Supabase sync:', sbErr.message);
+      }
+    }
+
+    const token = jwt.sign(
+      { id: userId, email: email.toLowerCase().trim(), role: 'admin' },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    logAudit(userId, 'SETUP_INITIAL_ADMIN', 'users', userId, { role: 'admin', email });
+    createNotification(userId, 'Master Administrator Active', 'System administration initialized with master control.', 'success');
+
+    res.status(201).json({
+      success: true,
+      message: 'Master Administrator created successfully!',
+      token,
+      user: {
+        id: userId,
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        role: 'admin',
+        department: department || 'Bachelor Science of information technology(BSIT)',
+        status: 'active'
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 

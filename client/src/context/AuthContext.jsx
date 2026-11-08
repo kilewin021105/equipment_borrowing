@@ -71,6 +71,30 @@ export function AuthProvider({ children }) {
     return res;
   };
 
+  const adminLogin = async (email, password) => {
+    const res = await api.adminLogin({ email, password });
+    if (res.success) {
+      localStorage.setItem('campusequip_token', res.token);
+      localStorage.setItem('campusequip_user', JSON.stringify(res.user));
+      setToken(res.token);
+      setUser(res.user);
+      fetchNotifications();
+    }
+    return res;
+  };
+
+  const setupInitialAdmin = async (adminData) => {
+    const res = await api.setupInitialAdmin(adminData);
+    if (res.success) {
+      localStorage.setItem('campusequip_token', res.token);
+      localStorage.setItem('campusequip_user', JSON.stringify(res.user));
+      setToken(res.token);
+      setUser(res.user);
+      fetchNotifications();
+    }
+    return res;
+  };
+
   const register = async (userData) => {
     const res = await api.register(userData);
     if (res.success) {
@@ -110,6 +134,8 @@ export function AuthProvider({ children }) {
         isLoading,
         isAuthenticated: !!token && !!user,
         login,
+        adminLogin,
+        setupInitialAdmin,
         register,
         logout,
         refreshMe,

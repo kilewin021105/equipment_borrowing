@@ -104,8 +104,8 @@ export function LoginPage({ setActivePage }) {
         </button>
       </form>
 
-      {/* Switch to Register */}
-      <div className="text-center pt-2 border-t border-slate-100">
+      {/* Switch to Register & Admin Portal */}
+      <div className="text-center pt-3 border-t border-slate-100 space-y-2">
         <p className="text-xs text-slate-500">
           Don't have an account yet?{' '}
           <button
@@ -115,6 +115,16 @@ export function LoginPage({ setActivePage }) {
             Create Your Account
           </button>
         </p>
+
+        <div className="pt-2">
+          <button
+            onClick={() => setActivePage('admin-login')}
+            className="text-xs text-slate-500 hover:text-purple-700 font-semibold flex items-center justify-center gap-1.5 transition mx-auto"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
+            System Administrator? Enter Admin Portal →
+          </button>
+        </div>
       </div>
     </div>
   );

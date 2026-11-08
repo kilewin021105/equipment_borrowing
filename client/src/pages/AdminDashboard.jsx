@@ -24,9 +24,12 @@ export function AdminDashboard() {
   const [editingCategory, setEditingCategory] = useState(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
 
-  // Users CRUD
+  // Users CRUD & Custodian Appointments
   const [userList, setUserList] = useState([]);
   const [userSearch, setUserSearch] = useState('');
+  const [appointingUser, setAppointingUser] = useState(null);
+  const [showAppointModal, setShowAppointModal] = useState(false);
+  const [assignedFacility, setAssignedFacility] = useState('Information Technology & Cyber Lab (BSIT)');
 
   // Audit Logs
   const [auditLogs, setAuditLogs] = useState([]);
@@ -160,6 +163,38 @@ export function AdminDashboard() {
       loadAllData();
     } catch (err) {
       notify(err.message || 'Update failed', 'error');
+    }
+  };
+
+  const handleAppointCustodian = async () => {
+    if (!appointingUser) return;
+    try {
+      const staffCount = userList.filter(x => x.role === 'staff').length;
+      if (staffCount >= 7 && appointingUser.role !== 'staff') {
+        notify('Maximum quota of 7 Lab Custodians has been reached.', 'error');
+        return;
+      }
+
+      await api.updateUser(appointingUser.id, { 
+        role: 'staff'
+      });
+      notify(`'${appointingUser.name}' successfully appointed as Lab Custodian for ${assignedFacility}!`);
+      setShowAppointModal(false);
+      setAppointingUser(null);
+      loadAllData();
+    } catch (err) {
+      notify(err.message || 'Custodian appointment failed', 'error');
+    }
+  };
+
+  const handleRevokeCustodian = async (targetUser) => {
+    if (!confirm(`Revoke Lab Custodian privileges for '${targetUser.name}'? They will return to Student/Faculty role.`)) return;
+    try {
+      await api.updateUser(targetUser.id, { role: 'borrower' });
+      notify(`Lab Custodian privileges revoked for '${targetUser.name}'.`);
+      loadAllData();
+    } catch (err) {
+      notify(err.message || 'Revocation failed', 'error');
     }
   };
 
@@ -593,6 +628,7 @@ export function AdminDashboard() {
                     <th className="p-3">Department</th>
                     <th className="p-3">ID / Tag</th>
                     <th className="p-3">Role</th>
+                    <th className="p-3">Custodian Delegation</th>
                     <th className="p-3">Status</th>
                     <th className="p-3 text-right">Actions</th>
                   </tr>
@@ -618,25 +654,43 @@ export function AdminDashboard() {
                           <td className="p-3 text-slate-600">{u.department}</td>
                           <td className="p-3 font-mono text-slate-600">{u.student_id || '—'}</td>
                           <td className="p-3">
-                            <select
-                              value={u.role}
-                              onChange={(e) => handleUserRoleChange(u.id, e.target.value)}
-                              className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-semibold text-slate-800"
-                            >
-                              <option value="borrower">Borrower (Student/Faculty)</option>
-                              <option 
-                                value="staff" 
-                                disabled={staffCount >= 7 && u.role !== 'staff'}
+                            <span className={`inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                              u.role === 'admin' 
+                                ? 'bg-purple-100 text-purple-800' 
+                                : u.role === 'staff'
+                                  ? 'bg-indigo-100 text-indigo-800'
+                                  : 'bg-slate-100 text-slate-700'
+                            }`}>
+                              {u.role === 'admin' ? '🛡️ Administrator' : u.role === 'staff' ? '📦 Lab Custodian' : '🎓 Student / Faculty'}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            {u.role === 'borrower' ? (
+                              <button
+                                onClick={() => {
+                                  setAppointingUser(u);
+                                  setShowAppointModal(true);
+                                }}
+                                disabled={staffCount >= 7}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                                  staffCount >= 7 
+                                    ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                                    : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-2xs'
+                                }`}
                               >
-                                Lab Custodian {staffCount >= 7 && u.role !== 'staff' ? '(Full: 7/7)' : `(${staffCount}/7)`}
-                              </option>
-                              <option 
-                                value="admin" 
-                                disabled={adminCount >= 5 && u.role !== 'admin'}
+                                <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                                {staffCount >= 7 ? 'Custodian Quota Full (7/7)' : 'Appoint as Custodian'}
+                              </button>
+                            ) : u.role === 'staff' ? (
+                              <button
+                                onClick={() => handleRevokeCustodian(u)}
+                                className="px-2.5 py-1 bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 rounded-lg text-xs font-bold transition flex items-center gap-1"
                               >
-                                System Administrator {adminCount >= 5 && u.role !== 'admin' ? '(Full: 5/5)' : `(${adminCount}/5)`}
-                              </option>
-                            </select>
+                                Revoke Custodian
+                              </button>
+                            ) : (
+                              <span className="text-[11px] font-medium text-slate-400">Master Authority</span>
+                            )}
                           </td>
                           <td className="p-3">
                             <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${
@@ -915,6 +969,83 @@ export function AdminDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Appoint Lab Custodian Modal */}
+      {showAppointModal && appointingUser && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+            <div className="bg-gradient-to-r from-indigo-900 to-indigo-800 text-white px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center">
+                  <Layers className="w-4 h-4 text-indigo-300" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-sm">Appoint Lab Custodian</h2>
+                  <p className="text-[11px] text-indigo-200">Delegate facility oversight authority</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => { setShowAppointModal(false); setAppointingUser(null); }} 
+                className="text-white/60 hover:text-white text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              
+              {/* Appointee Preview Card */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Candidate User</span>
+                <span className="font-bold text-slate-900 text-sm block">{appointingUser.name}</span>
+                <span className="text-xs text-slate-500 block">{appointingUser.email}</span>
+                <span className="text-xs text-indigo-700 font-semibold block">{appointingUser.department}</span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                  Assigned Laboratory Facility *
+                </label>
+                <select
+                  value={assignedFacility}
+                  onChange={(e) => setAssignedFacility(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="Information Technology & Cyber Lab (BSIT)">Information Technology & Cyber Lab (BSIT)</option>
+                  <option value="Hospitality, Culinary & Bar Lab (BSHM)">Hospitality, Culinary & Bar Lab (BSHM)</option>
+                  <option value="Forensic Science & Ballistics Lab (BSCRIM)">Forensic Science & Ballistics Lab (BSCRIM)</option>
+                  <option value="Instructional Media & Science Center (Education)">Instructional Media & Science Center (Education)</option>
+                  <option value="General Campus Equipment Center">General Campus Equipment Center</option>
+                </select>
+              </div>
+
+              <div className="p-3 bg-indigo-50/60 border border-indigo-100 rounded-xl text-xs text-indigo-900 leading-relaxed">
+                <span className="font-bold">Privilege Delegation: </span>
+                This user will gain staff-level authority to review student loan applications, perform counter checkouts, and inspect returned laboratory items.
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => { setShowAppointModal(false); setAppointingUser(null); }}
+                  className="px-4 py-2 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAppointCustodian}
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition"
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  Confirm Appointment
+                </button>
+              </div>
+
+            </div>
           </div>
         </div>
       )}

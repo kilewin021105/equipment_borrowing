@@ -5,6 +5,9 @@ const { authenticateToken } = require('../middleware/auth');
 
 router.post('/register', authController.register);
 router.post('/login', authController.login);
+router.post('/admin-login', authController.adminLogin);
+router.get('/admin-status', authController.getAdminStatus);
+router.post('/admin-setup', authController.setupInitialAdmin);
 router.get('/role-limits', authController.getRoleLimits);
 router.get('/me', authenticateToken, authController.getCurrentUser);
 router.put('/profile', authenticateToken, authController.updateProfile);

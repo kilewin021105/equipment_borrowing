@@ -219,14 +219,26 @@ export function Navbar({ activePage, setActivePage, onOpenBorrowSlip }) {
             ) : (
               <div className="flex items-center gap-2">
                 <button
+                  onClick={() => setActivePage('admin-login')}
+                  className={`p-2 rounded-xl transition flex items-center gap-1.5 text-xs font-bold ${
+                    activePage === 'admin-login'
+                      ? 'bg-purple-100 text-purple-900 ring-1 ring-purple-300'
+                      : 'text-slate-500 hover:text-purple-700 hover:bg-purple-50'
+                  }`}
+                  title="Administrator Portal"
+                >
+                  <Shield className="w-3.5 h-3.5 text-purple-600" />
+                  <span className="hidden sm:inline">Admin</span>
+                </button>
+                <button
                   onClick={() => setActivePage('login')}
-                  className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-blue-600 transition"
+                  className="px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-blue-600 transition"
                 >
                   Sign In
                 </button>
                 <button
                   onClick={() => setActivePage('register')}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition"
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition"
                 >
                   Create Account
                 </button>
@@ -279,18 +291,27 @@ export function Navbar({ activePage, setActivePage, onOpenBorrowSlip }) {
           )}
 
           {!user && (
-            <div className="pt-2 border-t border-slate-100 flex gap-2">
+            <div className="pt-2 border-t border-slate-100 space-y-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setActivePage('login'); setMobileMenuOpen(false); }}
+                  className="w-1/2 py-2 text-center text-xs font-bold text-slate-700 bg-slate-50 rounded-xl"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => { setActivePage('register'); setMobileMenuOpen(false); }}
+                  className="w-1/2 py-2 text-center text-xs font-bold text-white bg-blue-600 rounded-xl"
+                >
+                  Create Account
+                </button>
+              </div>
               <button
-                onClick={() => { setActivePage('login'); setMobileMenuOpen(false); }}
-                className="w-1/2 py-2 text-center text-xs font-bold text-slate-700 bg-slate-50 rounded-xl"
+                onClick={() => { setActivePage('admin-login'); setMobileMenuOpen(false); }}
+                className="w-full py-2 text-center text-xs font-bold text-purple-700 bg-purple-50 rounded-xl flex items-center justify-center gap-1.5"
               >
-                Sign In
-              </button>
-              <button
-                onClick={() => { setActivePage('register'); setMobileMenuOpen(false); }}
-                className="w-1/2 py-2 text-center text-xs font-bold text-white bg-blue-600 rounded-xl"
-              >
-                Create Account
+                <Shield className="w-3.5 h-3.5 text-purple-600" />
+                Administrator Portal
               </button>
             </div>
           )}

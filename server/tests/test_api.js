@@ -61,7 +61,7 @@ async function runTests() {
 
   const timestamp = Date.now();
   const testStudentEmail = `test.student.${timestamp}@campusequip.edu`;
-  const testStaffEmail = `test.staff.${timestamp}@campusequip.edu`;
+  const testStaffCandidateEmail = `test.staff.cand.${timestamp}@campusequip.edu`;
   const testAdminEmail = `test.admin.${timestamp}@campusequip.edu`;
 
   let studentToken = null;
@@ -76,56 +76,67 @@ async function runTests() {
     const health = await makeRequest('GET', '/api/health');
     assert(health.status === 200 && health.body.status === 'healthy', 'GET /api/health returns healthy status');
 
-    // 2. Dynamic Account Registration: Student / Borrower
+    // 2. Initial Setup: Create Master Administrator via Admin Route
+    const regAdmin = await makeRequest('POST', '/api/auth/admin-setup', {
+      name: 'Dynamic System Admin',
+      email: testAdminEmail,
+      password: 'adminpassword123',
+      department: 'Bachelor Science of information technology(BSIT)',
+      phone: '+63 919 345 6789'
+    });
+    assert(regAdmin.status === 201 && regAdmin.body.token && regAdmin.body.user.role === 'admin', 'POST /api/auth/admin-setup creates Master Admin account');
+    adminToken = regAdmin.body.token;
+    adminUserId = regAdmin.body.user.id;
+
+    // 3. Dedicated Admin Authentication Route
+    const adminLoginRes = await makeRequest('POST', '/api/auth/admin-login', {
+      email: testAdminEmail,
+      password: 'adminpassword123'
+    });
+    assert(adminLoginRes.status === 200 && adminLoginRes.body.token, 'POST /api/auth/admin-login successfully authenticates administrator');
+
+    // 4. Public Student/Faculty Registration (Role selector removed, defaults to borrower)
     const regStudent = await makeRequest('POST', '/api/auth/register', {
       name: 'Dynamic Student User',
       email: testStudentEmail,
       password: 'studentpassword123',
-      role: 'borrower',
       student_id: 'BSIT-2026-001',
       department: 'Bachelor Science of information technology(BSIT)',
       phone: '+63 917 123 4567'
     });
-    assert(regStudent.status === 201 && regStudent.body.token, 'POST /api/auth/register creates Student account');
+    assert(regStudent.status === 201 && regStudent.body.user.role === 'borrower', 'POST /api/auth/register automatically registers as borrower (no role selection needed)');
     studentToken = regStudent.body.token;
     studentUserId = regStudent.body.user.id;
 
-    // 3. Dynamic Account Registration: Lab Custodian / Staff
-    const regStaff = await makeRequest('POST', '/api/auth/register', {
-      name: 'Dynamic Custodian User',
-      email: testStaffEmail,
-      password: 'staffpassword123',
-      role: 'staff',
-      department: 'Bachelor Science of information technology(BSIT)',
-      phone: '+63 918 234 5678'
-    });
-    assert(regStaff.status === 201 && regStaff.body.token && regStaff.body.user.role === 'staff', 'POST /api/auth/register creates Lab Custodian / Staff account');
-    staffToken = regStaff.body.token;
-    staffUserId = regStaff.body.user.id;
-
-    // 4. Dynamic Account Registration: System Administrator
-    const regAdmin = await makeRequest('POST', '/api/auth/register', {
-      name: 'Dynamic System Admin',
-      email: testAdminEmail,
-      password: 'adminpassword123',
-      role: 'admin',
-      department: 'Bachelor Science of information technology(BSIT)',
-      phone: '+63 919 345 6789'
-    });
-    assert(regAdmin.status === 201 && regAdmin.body.token && regAdmin.body.user.role === 'admin', 'POST /api/auth/register creates Admin account');
-    adminToken = regAdmin.body.token;
-    adminUserId = regAdmin.body.user.id;
-
-    // 5. Authentication: Student Login
-    const loginStudent = await makeRequest('POST', '/api/auth/login', {
+    // 5. Security: Non-admin student blocked from Admin Login route
+    const illegalAdminLogin = await makeRequest('POST', '/api/auth/admin-login', {
       email: testStudentEmail,
       password: 'studentpassword123'
     });
-    assert(loginStudent.status === 200 && loginStudent.body.token, 'POST /api/auth/login authenticates registered student');
+    assert(illegalAdminLogin.status === 403, 'POST /api/auth/admin-login strictly rejects non-admin users with 403 Forbidden');
 
-    // 6. Auth /me profile & stats
-    const meRes = await makeRequest('GET', '/api/auth/me', null, studentToken);
-    assert(meRes.status === 200 && meRes.body.user.email === testStudentEmail, 'GET /api/auth/me returns authenticated user details');
+    // 6. Admin Decides Who Is Responsible for Lab Custodians: Register candidate & appoint
+    const regStaffCand = await makeRequest('POST', '/api/auth/register', {
+      name: 'Appointed Custodian User',
+      email: testStaffCandidateEmail,
+      password: 'staffpassword123',
+      department: 'Bachelor Science of hospitality Management(BSHM)',
+      phone: '+63 918 234 5678'
+    });
+    staffUserId = regStaffCand.body.user.id;
+
+    const appointRes = await makeRequest('PUT', `/api/users/${staffUserId}`, {
+      role: 'staff'
+    }, adminToken);
+    assert(appointRes.status === 200 && appointRes.body.data.role === 'staff', 'Admin successfully appoints user to Lab Custodian role via PUT /api/users/:id');
+
+    // Login as appointed Custodian
+    const staffLogin = await makeRequest('POST', '/api/auth/login', {
+      email: testStaffCandidateEmail,
+      password: 'staffpassword123'
+    });
+    staffToken = staffLogin.body.token;
+    assert(staffLogin.status === 200 && staffLogin.body.user.role === 'staff', 'Appointed Lab Custodian can authenticate and access custodian desk');
 
     // 7. Rejection of duplicate registration
     const dupRes = await makeRequest('POST', '/api/auth/register', {
@@ -137,7 +148,7 @@ async function runTests() {
 
     // 8. Categories retrieval
     const catRes = await makeRequest('GET', '/api/categories');
-    assert(catRes.status === 200 && Array.isArray(catRes.body.data) && catRes.body.data.length > 0, 'GET /api/categories returns populated list with item counts');
+    assert(catRes.status === 200 && Array.isArray(catRes.body.data) && catRes.body.data.length >= 5, 'GET /api/categories returns populated list with all 5 categories');
 
     // 9. Equipment Catalog Search and Filter
     const equipRes = await makeRequest('GET', '/api/equipment?search=Cisco');
@@ -182,14 +193,13 @@ async function runTests() {
     }, studentToken);
     assert(borrowRes.status === 201 && borrowRes.body.data.reference_code, 'POST /api/borrow creates pending borrow request with ref code');
     const borrowReqId = borrowRes.body.data.id;
-    const refCode = borrowRes.body.data.reference_code;
 
-    // 13. Staff reviews and approves request
+    // 13. Appointed Staff reviews and approves request
     const approveRes = await makeRequest('PATCH', `/api/borrow/${borrowReqId}/status`, {
       action: 'approve',
       approval_notes: 'Approved for thermal testing. Please collect at counter.'
     }, staffToken);
-    assert(approveRes.status === 200 && approveRes.body.success === true, 'PATCH /api/borrow/:id/status allows staff to approve request');
+    assert(approveRes.status === 200 && approveRes.body.success === true, 'PATCH /api/borrow/:id/status allows appointed staff to approve request');
 
     // 14. Staff dispatches equipment (handover to borrower)
     const dispatchRes = await makeRequest('PATCH', `/api/borrow/${borrowReqId}/status`, {
