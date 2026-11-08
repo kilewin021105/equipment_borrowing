@@ -237,3 +237,4 @@ INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details) VALUES
 (2, 'APPROVE_REQUEST', 'borrow_requests', 1, '{"ref":"BRW-2026-IT01A"}'),
 (2, 'DISPATCH_EQUIPMENT', 'borrow_requests', 1, '{"ref":"BRW-2026-IT01A","qty":1}'),
 (2, 'RETURN_EQUIPMENT', 'borrow_requests', 5, '{"ref":"BRW-2026-IT05E","condition":"excellent"}');
+

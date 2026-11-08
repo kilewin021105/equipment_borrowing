@@ -91,9 +91,14 @@ async function transfer() {
     console.log('\n[6/6] Transferring Audit Logs...');
     const localAudit = db.prepare('SELECT id, user_id, action, entity_type, entity_id, details, created_at FROM audit_logs').all();
     if (localAudit.length > 0) {
-      const { data, error } = await supabase.from('audit_logs').upsert(localAudit, { onConflict: 'id' });
+      const validUserIds = new Set(localUsers.map(u => u.id));
+      const sanitizedAudit = localAudit.map(a => ({
+        ...a,
+        user_id: validUserIds.has(a.user_id) ? a.user_id : null
+      }));
+      const { data, error } = await supabase.from('audit_logs').upsert(sanitizedAudit, { onConflict: 'id' });
       if (error) throw new Error(`Audit logs transfer failed: ${error.message} (${error.hint || ''})`);
-      console.log(` ✅ Transferred ${localAudit.length} audit log entries.`);
+      console.log(` ✅ Transferred ${sanitizedAudit.length} audit log entries.`);
     }
 
     console.log('\n=======================================================');
@@ -118,3 +123,4 @@ async function transfer() {
 }
 
 transfer();
+

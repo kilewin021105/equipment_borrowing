@@ -27,6 +27,8 @@ app.get('/api/health', (req, res) => {
     status: 'healthy',
     system: 'CampusEquip - College Equipment Borrowing System',
     timestamp: new Date().toISOString(),
+    supabaseConnected: !!process.env.SUPABASE_URL,
+    supabaseUrl: process.env.SUPABASE_URL || null,
     version: '1.0.0'
   });
 });
@@ -62,6 +64,9 @@ const server = app.listen(PORT, () => {
   console.log(`=======================================================`);
   console.log(` CampusEquip API Server running on http://localhost:${PORT}`);
   console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);
+  if (process.env.SUPABASE_URL) {
+    console.log(` Supabase Cloud: ${process.env.SUPABASE_URL}`);
+  }
   console.log(`=======================================================`);
 });
 

@@ -205,6 +205,11 @@ async function runTests() {
     // Clean up created test equipment
     await makeRequest('DELETE', `/api/equipment/${createdEquipId}`, null, adminToken);
 
+    // Clean up created test user (cascades borrow requests & notifications)
+    if (regRes && regRes.body && regRes.body.user) {
+      await makeRequest('DELETE', `/api/users/${regRes.body.user.id}`, null, adminToken);
+    }
+
   } catch (err) {
     console.error('Test execution error:', err);
     failed++;

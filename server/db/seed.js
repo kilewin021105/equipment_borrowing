@@ -13,6 +13,7 @@ async function seed() {
   db.exec('DELETE FROM equipment;');
   db.exec('DELETE FROM categories;');
   db.exec('DELETE FROM users;');
+  db.exec("DELETE FROM sqlite_sequence WHERE name IN ('users', 'categories', 'equipment', 'borrow_requests', 'notifications', 'audit_logs');");
   db.exec('PRAGMA foreign_keys = ON;');
 
   console.log('--- Seeding Categories for College Programs ---');
