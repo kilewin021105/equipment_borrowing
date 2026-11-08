@@ -79,9 +79,9 @@ exports.register = async (req, res, next) => {
     const userId = Number(result.lastInsertRowid);
 
     // Sync to Supabase in real-time if connected
-    if (process.env.SUPABASE_URL) {
+    const { supabase, supabaseUrl } = require('../db/supabaseClient');
+    if (supabaseUrl && supabase) {
       try {
-        const { supabase } = require('../db/supabaseClient');
         await supabase.from('users').upsert({
           id: userId,
           name: name.trim(),
@@ -419,9 +419,8 @@ exports.setupInitialAdmin = async (req, res, next) => {
     const userId = Number(result.lastInsertRowid);
 
     // Sync to Supabase
-    if (process.env.SUPABASE_URL) {
+    if (supabaseUrl && supabase) {
       try {
-        const { supabase } = require('../db/supabaseClient');
         await supabase.from('users').upsert({
           id: userId,
           name: name.trim(),

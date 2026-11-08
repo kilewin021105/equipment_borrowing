@@ -98,9 +98,9 @@ exports.updateUser = (req, res, next) => {
     `).run(role || null, status || null, department || null, name || null, phone || null, id);
 
     // Sync to Supabase in background
-    if (process.env.SUPABASE_URL) {
+    const { supabase, supabaseUrl } = require('../db/supabaseClient');
+    if (supabaseUrl && supabase) {
       try {
-        const { supabase } = require('../db/supabaseClient');
         supabase.from('users').update({
           role: role || current.role,
           status: status || current.status,
@@ -144,9 +144,8 @@ exports.deleteUser = (req, res, next) => {
     logAudit(req.user.id, 'DELETE_USER', 'users', id, { email: current.email });
 
     // Sync deletion to Supabase
-    if (process.env.SUPABASE_URL) {
+    if (supabaseUrl && supabase) {
       try {
-        const { supabase } = require('../db/supabaseClient');
         supabase.from('users').delete().eq('id', id).then(() => {}).catch(e => console.warn('Supabase delete user notice:', e.message));
       } catch (sbErr) {
         console.warn('Supabase delete error:', sbErr.message);
