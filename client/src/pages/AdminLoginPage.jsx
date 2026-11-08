@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Lock, Mail, User, Building, AlertCircle, ArrowRight, ShieldAlert, KeyRound, CheckCircle2 } from 'lucide-react';
+import { Shield, Lock, Mail, User, AlertCircle, ArrowRight, ShieldAlert, KeyRound, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 
 export function AdminLoginPage({ setActivePage }) {
   const { adminLogin, setupInitialAdmin } = useAuth();
-  const [hasAdmin, setHasAdmin] = useState(true);
+  const [tab, setTab] = useState('setup'); // 'login' or 'setup'
+  const [hasAdmin, setHasAdmin] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
 
   // Form states
@@ -25,12 +26,17 @@ export function AdminLoginPage({ setActivePage }) {
     let isMounted = true;
     api.getAdminStatus()
       .then(res => {
-        if (isMounted && res.success) {
+        if (isMounted) {
           setHasAdmin(res.hasAdmin);
+          // If no admin exists, default to setup mode; otherwise login mode
+          setTab(res.hasAdmin ? 'login' : 'setup');
         }
       })
-      .catch(err => {
-        console.warn('Could not check admin status:', err);
+      .catch(() => {
+        if (isMounted) {
+          setHasAdmin(false);
+          setTab('setup');
+        }
       })
       .finally(() => {
         if (isMounted) setCheckingStatus(false);
@@ -49,13 +55,18 @@ export function AdminLoginPage({ setActivePage }) {
       await adminLogin(email, password);
       setActivePage('admin');
     } catch (err) {
-      setError(err.message || 'Administrator authentication failed. Please verify your credentials.');
+      const msg = err.message || 'Administrator authentication failed.';
+      if (msg.includes('404') || msg.includes('not found')) {
+        setError('Server is updating routes. Please ensure your backend server was restarted with npm start.');
+      } else {
+        setError(msg);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle First-Time Admin Setup
+  // Handle First-Time Admin Setup / Creation
   const handleSetup = async (e) => {
     e.preventDefault();
     setError('');
@@ -76,10 +87,10 @@ export function AdminLoginPage({ setActivePage }) {
         phone: phone.trim() || null
       });
 
-      setSuccessMsg('Master Administrator account initialized!');
+      setSuccessMsg('Administrator account initialized successfully!');
       setTimeout(() => {
         setActivePage('admin');
-      }, 500);
+      }, 400);
     } catch (err) {
       setError(err.message || 'Failed to initialize administrator account.');
     } finally {
@@ -91,7 +102,7 @@ export function AdminLoginPage({ setActivePage }) {
     return (
       <div className="max-w-md mx-auto my-16 p-8 bg-white rounded-3xl border border-slate-200 shadow-xl text-center">
         <div className="w-8 h-8 border-3 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Verifying Administrator Access...</p>
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Checking Administrator Status...</p>
       </div>
     );
   }
@@ -105,26 +116,40 @@ export function AdminLoginPage({ setActivePage }) {
           <Shield className="w-7 h-7" />
         </div>
         <div className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-purple-100 text-purple-800">
-          Restricted Portal
+          Institutional Security Portal
         </div>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-          {hasAdmin ? 'Administrator Portal' : 'Initialize Master Administrator'}
+          Administrator Console
         </h2>
         <p className="text-xs text-slate-500">
-          {hasAdmin 
-            ? 'Authorized institutional system administrators only. All access attempts are audited.'
-            : 'No administrator accounts exist. Please configure the master system administrator credentials.'}
+          Exclusive management interface for laboratory custodians, master inventory, and audit logs.
         </p>
       </div>
 
-      {/* Security Advisory Banner */}
-      <div className="p-3 bg-purple-50/70 border border-purple-200/80 rounded-2xl flex items-start gap-2.5 text-xs text-purple-900">
-        <ShieldAlert className="w-4 h-4 text-purple-700 flex-shrink-0 mt-0.5" />
-        <p className="leading-relaxed">
-          {hasAdmin
-            ? 'Students, faculty, and lab custodians must sign in through the primary login portal.'
-            : 'This master account will hold full authority to appoint Lab Custodians and manage campus assets.'}
-        </p>
+      {/* Tabs: Sign In vs Create Admin */}
+      <div className="flex bg-slate-100 p-1 rounded-2xl text-xs font-bold">
+        <button
+          type="button"
+          onClick={() => { setTab('login'); setError(''); }}
+          className={`flex-1 py-2 rounded-xl transition ${
+            tab === 'login'
+              ? 'bg-white text-purple-900 shadow-xs font-extrabold'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          Admin Sign In
+        </button>
+        <button
+          type="button"
+          onClick={() => { setTab('setup'); setError(''); }}
+          className={`flex-1 py-2 rounded-xl transition ${
+            tab === 'setup'
+              ? 'bg-white text-purple-900 shadow-xs font-extrabold'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          Initialize / Register Admin
+        </button>
       </div>
 
       {error && (
@@ -141,9 +166,16 @@ export function AdminLoginPage({ setActivePage }) {
         </div>
       )}
 
-      {hasAdmin ? (
-        /* STANDARD ADMIN LOGIN FORM */
+      {tab === 'login' ? (
+        /* STANDARD ADMIN SIGN IN */
         <form onSubmit={handleLogin} className="space-y-4">
+          <div className="p-3 bg-purple-50/70 border border-purple-200/80 rounded-2xl flex items-start gap-2 text-xs text-purple-900">
+            <ShieldAlert className="w-4 h-4 text-purple-700 flex-shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              Restricted to administrators. If you have not created your admin account yet, click the <strong>"Initialize / Register Admin"</strong> tab above.
+            </p>
+          </div>
+
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
               Administrator Email
@@ -194,8 +226,15 @@ export function AdminLoginPage({ setActivePage }) {
           </button>
         </form>
       ) : (
-        /* FIRST-TIME MASTER ADMIN ONBOARDING FORM */
+        /* INITIALIZE / REGISTER ADMIN */
         <form onSubmit={handleSetup} className="space-y-3.5">
+          <div className="p-3 bg-purple-50/70 border border-purple-200/80 rounded-2xl flex items-start gap-2 text-xs text-purple-900">
+            <ShieldAlert className="w-4 h-4 text-purple-700 flex-shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              Create your institutional Administrator account. You will have full privileges to appoint Lab Custodians and control campus inventory.
+            </p>
+          </div>
+
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
               Administrator Full Name *
@@ -204,7 +243,7 @@ export function AdminLoginPage({ setActivePage }) {
               <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="e.g. System Administrator"
+                placeholder="e.g. John Fred"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 font-medium"
@@ -221,7 +260,7 @@ export function AdminLoginPage({ setActivePage }) {
               <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="email"
-                placeholder="admin@campus.edu"
+                placeholder="gaperjohnfred83@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 font-medium"
@@ -250,7 +289,7 @@ export function AdminLoginPage({ setActivePage }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Admin ID
+                Admin Tag / ID
               </label>
               <input
                 type="text"
@@ -275,7 +314,7 @@ export function AdminLoginPage({ setActivePage }) {
 
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Department
+              Academic Department
             </label>
             <select
               value={department}

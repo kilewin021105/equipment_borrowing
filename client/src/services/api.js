@@ -44,9 +44,44 @@ async function request(endpoint, options = {}) {
 export const api = {
   // Auth
   login: (credentials) => request('/auth/login', { method: 'POST', body: credentials }),
-  adminLogin: (credentials) => request('/auth/admin-login', { method: 'POST', body: credentials }),
-  getAdminStatus: () => request('/auth/admin-status'),
-  setupInitialAdmin: (data) => request('/auth/admin-setup', { method: 'POST', body: data }),
+  adminLogin: async (credentials) => {
+    try {
+      return await request('/auth/admin-login', { method: 'POST', body: credentials });
+    } catch (err) {
+      // Fallback to standard login if /admin-login returns 404
+      if (err.status === 404) {
+        const res = await request('/auth/login', { method: 'POST', body: credentials });
+        if (res.user && res.user.role !== 'admin') {
+          throw new Error('Access Denied: This account is not a System Administrator.');
+        }
+        return res;
+      }
+      throw err;
+    }
+  },
+  getAdminStatus: async () => {
+    try {
+      return await request('/auth/admin-status');
+    } catch {
+      try {
+        const limits = await request('/auth/role-limits');
+        const count = limits.data?.admin?.current || 0;
+        return { success: true, hasAdmin: count > 0, adminCount: count, maxAdmins: 5 };
+      } catch {
+        return { success: true, hasAdmin: false, adminCount: 0, maxAdmins: 5 };
+      }
+    }
+  },
+  setupInitialAdmin: async (data) => {
+    try {
+      return await request('/auth/admin-setup', { method: 'POST', body: data });
+    } catch (err) {
+      if (err.status === 404) {
+        return await request('/auth/register', { method: 'POST', body: { ...data, role: 'admin' } });
+      }
+      throw err;
+    }
+  },
   register: (userData) => request('/auth/register', { method: 'POST', body: userData }),
   getRoleLimits: () => request('/auth/role-limits'),
   getMe: () => request('/auth/me'),
