@@ -394,6 +394,64 @@ async function seed() {
       status: 'available',
       image_url: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80',
       max_days: 7
+    },
+
+    // 5. General Campus Laboratory Assets
+    {
+      category: 'General Campus Laboratory Assets',
+      name: 'Digital Laser Distance Meter & Rangefinder (100m / 328ft)',
+      asset_tag: 'EQ-GEN-0501',
+      model_number: 'LEICA-DISTO-D2',
+      description: 'Precision laser distance meter with Bluetooth Smart, Pythagoras measuring function, and IP54 dust/water protection for cross-department campus survey and project layouts.',
+      location: 'General Campus Equipment Center - Rm 101',
+      total: 6,
+      available: 6,
+      condition: 'excellent',
+      status: 'available',
+      image_url: 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=600&q=80',
+      max_days: 5
+    },
+    {
+      category: 'General Campus Laboratory Assets',
+      name: 'Logitech Spotlight Advanced Presentation Remote & Pointer',
+      asset_tag: 'EQ-GEN-0502',
+      model_number: 'LOGI-SPOTLIGHT-PRO',
+      description: 'Advanced wireless digital presentation pointer with cursor control, magnification, timer vibration alerts, and 30-meter wireless range for institutional events and defense presentations.',
+      location: 'Audio-Visual Equipment Desk - Rm 102',
+      total: 8,
+      available: 8,
+      condition: 'excellent',
+      status: 'available',
+      image_url: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=600&q=80',
+      max_days: 3
+    },
+    {
+      category: 'General Campus Laboratory Assets',
+      name: "Fluke 117 True-RMS Electrician's Multimeter with Non-Contact Voltage",
+      asset_tag: 'EQ-GEN-0503',
+      model_number: 'FLUKE-117-RMS',
+      description: 'Commercial True-RMS digital multimeter with VoltAlert non-contact voltage detection, low input impedance to prevent false readings, and min/max/average recording.',
+      location: 'General Engineering & Maintenance Hub - Rm 104',
+      total: 8,
+      available: 8,
+      condition: 'excellent',
+      status: 'available',
+      image_url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
+      max_days: 5
+    },
+    {
+      category: 'General Campus Laboratory Assets',
+      name: 'Anker Nebula Mars II Pro Portable Presentation Projector & Tripod',
+      asset_tag: 'EQ-GEN-0504',
+      model_number: 'NEBULA-MARS2-PRO',
+      description: 'Portable outdoor/indoor cinema projector with 500 ANSI lumens, dual 10W audio drivers, 3-hour built-in battery, and heavy-duty adjustable aluminum tripod for student organizations and events.',
+      location: 'Student Affairs & Activity Resource Center',
+      total: 5,
+      available: 5,
+      condition: 'good',
+      status: 'available',
+      image_url: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80',
+      max_days: 4
     }
   ];
 
