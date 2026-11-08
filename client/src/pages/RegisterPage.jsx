@@ -46,11 +46,12 @@ export function RegisterPage({ setActivePage }) {
         password,
         student_id: studentId.trim() || null,
         department,
-        phone: phone.trim() || null
+        phone: phone.trim() || null,
+        role: isFirstAdmin ? 'admin' : undefined
       });
 
-      // If this account was provisioned as Admin, route straight to Admin Dashboard
-      if (res && res.user && res.user.role === 'admin') {
+      // If this account was provisioned as Admin or is the first admin, route straight to Admin Dashboard
+      if ((res && res.user && res.user.role === 'admin') || isFirstAdmin) {
         setActivePage('admin');
       } else {
         setActivePage('catalog');
