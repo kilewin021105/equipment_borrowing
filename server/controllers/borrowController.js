@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { db, logAudit, createNotification } = require('../db/database');
+const { syncBorrowRequest } = require('../db/syncHelper');
 
 // Helper to generate readable college borrow reference
 function generateReferenceCode() {
@@ -155,6 +156,8 @@ exports.createBorrowRequest = (req, res, next) => {
       JOIN users u ON br.user_id = u.id
       WHERE br.id = ?
     `).get(newRequestId);
+
+    syncBorrowRequest(created);
 
     res.status(201).json({
       success: true,
@@ -348,6 +351,9 @@ exports.updateRequestStatus = (req, res, next) => {
         `/dashboard?ref=${request.reference_code}`
       );
 
+      const updatedReq = db.prepare('SELECT * FROM borrow_requests WHERE id = ?').get(id);
+      syncBorrowRequest(updatedReq);
+
       return res.json({ success: true, message: 'Request approved successfully.' });
     }
 
@@ -377,6 +383,9 @@ exports.updateRequestStatus = (req, res, next) => {
         'danger',
         `/dashboard`
       );
+
+      const updatedReq = db.prepare('SELECT * FROM borrow_requests WHERE id = ?').get(id);
+      syncBorrowRequest(updatedReq);
 
       return res.json({ success: true, message: 'Request rejected.' });
     }
@@ -425,6 +434,9 @@ exports.updateRequestStatus = (req, res, next) => {
         'info',
         `/dashboard`
       );
+
+      const updatedReq = db.prepare('SELECT * FROM borrow_requests WHERE id = ?').get(id);
+      syncBorrowRequest(updatedReq);
 
       return res.json({ success: true, message: 'Equipment successfully dispatched to borrower.' });
     }
@@ -475,6 +487,9 @@ exports.updateRequestStatus = (req, res, next) => {
         `/dashboard`
       );
 
+      const updatedReq = db.prepare('SELECT * FROM borrow_requests WHERE id = ?').get(id);
+      syncBorrowRequest(updatedReq);
+
       return res.json({ success: true, message: 'Equipment successfully returned and inventory restored.' });
     }
 
@@ -511,6 +526,9 @@ exports.cancelBorrowRequest = (req, res, next) => {
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(id);
+
+    const updatedReq = db.prepare('SELECT * FROM borrow_requests WHERE id = ?').get(id);
+    syncBorrowRequest(updatedReq);
 
     logAudit(userId, 'CANCEL_REQUEST', 'borrow_requests', id, { reference_code: request.reference_code });
 
