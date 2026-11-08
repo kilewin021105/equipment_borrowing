@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Package, Lock, Mail, User, Phone, AlertCircle, ArrowRight, Shield, Layers, UserCheck, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Package, Lock, Mail, User, Phone, AlertCircle, ArrowRight, Shield, Layers, UserCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../services/api';
 
 export function RegisterPage({ setActivePage }) {
   const { register } = useAuth();
@@ -14,50 +13,10 @@ export function RegisterPage({ setActivePage }) {
   const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [roleLimits, setRoleLimits] = useState({
-    admin: { current: 0, max: 5, available: 5, isFull: false },
-    staff: { current: 0, max: 7, available: 7, isFull: false },
-    borrower: { current: 0, max: null, available: null, isFull: false }
-  });
-
-  // Fetch real-time role limits and current registrations
-  useEffect(() => {
-    let isMounted = true;
-    api.getRoleLimits()
-      .then(res => {
-        if (isMounted && res.data) {
-          setRoleLimits(res.data);
-          // If default selected role is full, auto-fallback to available role
-          if (res.data.admin && res.data.admin.isFull) {
-            if (res.data.staff && !res.data.staff.isFull) {
-              setRole('staff');
-            } else {
-              setRole('borrower');
-            }
-          }
-        }
-      })
-      .catch(err => {
-        console.warn('Could not fetch role limits:', err);
-      });
-
-    return () => { isMounted = false; };
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
-    // Pre-validation for role limitations
-    if (role === 'admin' && roleLimits.admin && roleLimits.admin.isFull) {
-      setError('Administrator role quota full (maximum 5 accounts allowed). Please select another role.');
-      return;
-    }
-
-    if (role === 'staff' && roleLimits.staff && roleLimits.staff.isFull) {
-      setError('Lab Custodian role quota full (maximum 7 accounts allowed). Please select another role.');
-      return;
-    }
 
     if (password.length < 6) {
       setError('Password must be at least 6 characters.');
@@ -66,7 +25,7 @@ export function RegisterPage({ setActivePage }) {
 
     setIsLoading(true);
     try {
-      const res = await register({
+      await register({
         name: name.trim(),
         email: email.trim(),
         password,
@@ -91,9 +50,6 @@ export function RegisterPage({ setActivePage }) {
     }
   };
 
-  const adminLimit = roleLimits.admin || { current: 0, max: 5, available: 5, isFull: false };
-  const staffLimit = roleLimits.staff || { current: 0, max: 7, available: 7, isFull: false };
-
   return (
     <div className="max-w-xl mx-auto my-10 p-8 bg-white rounded-3xl border border-slate-200 shadow-xl space-y-6">
       
@@ -107,17 +63,6 @@ export function RegisterPage({ setActivePage }) {
         </p>
       </div>
 
-      {/* Role Quota Policy Pill */}
-      <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-start gap-2.5 text-xs text-slate-600">
-        <ShieldAlert className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-        <div className="space-y-0.5 leading-relaxed">
-          <span className="font-bold text-slate-800">Role Quotas Enforced: </span>
-          <span>
-            System <strong>Administrators (1–5 users max)</strong> and <strong>Lab Custodians (1–7 users max)</strong> have strict institutional caps. Student/Faculty borrower accounts are unlimited.
-          </span>
-        </div>
-      </div>
-
       {error && (
         <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -127,121 +72,54 @@ export function RegisterPage({ setActivePage }) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         
-        {/* Role Selector Cards */}
+        {/* Role Selector Cards - Clean: Admin, Lab Custodian, Student/Faculty */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Select Account Role *
-            </label>
-            <span className="text-[11px] text-slate-400 font-medium">Click a role to choose</span>
-          </div>
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            Select Account Role *
+          </label>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
             
-            {/* Administrator Button */}
+            {/* Admin */}
             <button
               type="button"
-              disabled={adminLimit.isFull}
               onClick={() => setRole('admin')}
-              className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between relative ${
-                adminLimit.isFull
-                  ? 'bg-slate-100 border-slate-200 opacity-60 cursor-not-allowed text-slate-400'
-                  : role === 'admin'
-                    ? 'bg-purple-50/80 border-purple-500 ring-2 ring-purple-400 text-purple-950 shadow-sm'
-                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+              className={`py-3 px-4 rounded-2xl border text-center font-bold transition flex items-center justify-center gap-2 ${
+                role === 'admin'
+                  ? 'bg-purple-50 border-purple-500 ring-2 ring-purple-400 text-purple-950 shadow-xs'
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
             >
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <Shield className={`w-4 h-4 ${role === 'admin' && !adminLimit.isFull ? 'text-purple-600' : 'text-slate-400'}`} />
-                  <span className={`w-2 h-2 rounded-full ${adminLimit.isFull ? 'bg-rose-400' : role === 'admin' ? 'bg-purple-600' : 'bg-slate-200'}`} />
-                </div>
-                <span className="font-bold text-xs block text-slate-900">Administrator</span>
-                <span className="text-[10px] text-slate-500 mt-0.5 leading-tight block">Master inventory CRUD & analytics</span>
-              </div>
-
-              {/* Quota Indicator */}
-              <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between">
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                  adminLimit.isFull 
-                    ? 'bg-rose-100 text-rose-700 font-extrabold' 
-                    : 'bg-purple-100 text-purple-800'
-                }`}>
-                  {adminLimit.isFull ? 'FULL (5/5)' : `${adminLimit.current}/5 filled`}
-                </span>
-                {!adminLimit.isFull && (
-                  <span className="text-[9px] text-slate-400">
-                    {adminLimit.available} left
-                  </span>
-                )}
-              </div>
+              <Shield className={`w-4 h-4 ${role === 'admin' ? 'text-purple-600' : 'text-slate-400'}`} />
+              <span>Admin</span>
             </button>
 
-            {/* Lab Custodian Button */}
+            {/* Lab Custodian */}
             <button
               type="button"
-              disabled={staffLimit.isFull}
               onClick={() => setRole('staff')}
-              className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between relative ${
-                staffLimit.isFull
-                  ? 'bg-slate-100 border-slate-200 opacity-60 cursor-not-allowed text-slate-400'
-                  : role === 'staff'
-                    ? 'bg-indigo-50/80 border-indigo-500 ring-2 ring-indigo-400 text-indigo-950 shadow-sm'
-                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+              className={`py-3 px-4 rounded-2xl border text-center font-bold transition flex items-center justify-center gap-2 ${
+                role === 'staff'
+                  ? 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-400 text-indigo-950 shadow-xs'
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
             >
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <Layers className={`w-4 h-4 ${role === 'staff' && !staffLimit.isFull ? 'text-indigo-600' : 'text-slate-400'}`} />
-                  <span className={`w-2 h-2 rounded-full ${staffLimit.isFull ? 'bg-rose-400' : role === 'staff' ? 'bg-indigo-600' : 'bg-slate-200'}`} />
-                </div>
-                <span className="font-bold text-xs block text-slate-900">Lab Custodian</span>
-                <span className="text-[10px] text-slate-500 mt-0.5 leading-tight block">Approvals & return check-in</span>
-              </div>
-
-              {/* Quota Indicator */}
-              <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between">
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                  staffLimit.isFull 
-                    ? 'bg-rose-100 text-rose-700 font-extrabold' 
-                    : 'bg-indigo-100 text-indigo-800'
-                }`}>
-                  {staffLimit.isFull ? 'FULL (7/7)' : `${staffLimit.current}/7 filled`}
-                </span>
-                {!staffLimit.isFull && (
-                  <span className="text-[9px] text-slate-400">
-                    {staffLimit.available} left
-                  </span>
-                )}
-              </div>
+              <Layers className={`w-4 h-4 ${role === 'staff' ? 'text-indigo-600' : 'text-slate-400'}`} />
+              <span>Lab Custodian</span>
             </button>
 
-            {/* Borrower Button */}
+            {/* Student/Faculty */}
             <button
               type="button"
               onClick={() => setRole('borrower')}
-              className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between ${
+              className={`py-3 px-4 rounded-2xl border text-center font-bold transition flex items-center justify-center gap-2 ${
                 role === 'borrower'
-                  ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-400 text-blue-950 shadow-sm'
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                  ? 'bg-blue-50 border-blue-500 ring-2 ring-blue-400 text-blue-950 shadow-xs'
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
             >
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <UserCheck className={`w-4 h-4 ${role === 'borrower' ? 'text-blue-600' : 'text-slate-400'}`} />
-                  <span className={`w-2 h-2 rounded-full ${role === 'borrower' ? 'bg-blue-600' : 'bg-slate-200'}`} />
-                </div>
-                <span className="font-bold text-xs block text-slate-900">Student / Faculty</span>
-                <span className="text-[10px] text-slate-500 mt-0.5 leading-tight block">Borrow assets & printable slips</span>
-              </div>
-
-              {/* Quota Indicator */}
-              <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between">
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
-                  Unlimited
-                </span>
-                <span className="text-[9px] text-slate-400">Open Access</span>
-              </div>
+              <UserCheck className={`w-4 h-4 ${role === 'borrower' ? 'text-blue-600' : 'text-slate-400'}`} />
+              <span>Student/Faculty</span>
             </button>
 
           </div>
