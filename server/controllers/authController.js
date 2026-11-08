@@ -26,37 +26,35 @@ exports.register = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'An account with this email already exists.' });
     }
 
-    // Determine role: Public registration always defaults to 'borrower' (Student / Faculty)
-    // Only allow 'admin' if 0 administrators exist (first-time setup) or if authenticated admin invites.
-    // 'staff' (Lab Custodian) must be appointed by an Administrator.
-    let assignedRole = 'borrower';
+    // Determine role:
+    // If no administrator account exists yet in the database (0 admins),
+    // the very first account created automatically becomes the Master Administrator!
+    // Subsequent public registrations default to 'borrower' (Student / Faculty Member).
+    // Lab Custodians ('staff') are appointed exclusively by an Administrator.
     const adminCount = Number(db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get().count || 0);
+    let assignedRole = 'borrower';
 
-    if (role === 'admin') {
-      if (adminCount === 0 || (req.user && req.user.role === 'admin')) {
-        if (adminCount >= 5) {
-          return res.status(400).json({
-            success: false,
-            message: 'The maximum quota of 5 Administrator accounts has been reached.'
-          });
-        }
-        assignedRole = 'admin';
-      } else {
-        assignedRole = 'borrower';
+    if (adminCount === 0) {
+      assignedRole = 'admin';
+    } else if (role === 'admin' && req.user && req.user.role === 'admin') {
+      if (adminCount >= 5) {
+        return res.status(400).json({
+          success: false,
+          message: 'The maximum quota of 5 Administrator accounts has been reached.'
+        });
       }
-    } else if (role === 'staff') {
-      if (req.user && req.user.role === 'admin') {
-        const staffCount = Number(db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'staff'").get().count || 0);
-        if (staffCount >= 7) {
-          return res.status(400).json({
-            success: false,
-            message: 'The maximum quota of 7 Lab Custodian accounts has been reached.'
-          });
-        }
-        assignedRole = 'staff';
-      } else {
-        assignedRole = 'borrower';
+      assignedRole = 'admin';
+    } else if (role === 'staff' && req.user && req.user.role === 'admin') {
+      const staffCount = Number(db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'staff'").get().count || 0);
+      if (staffCount >= 7) {
+        return res.status(400).json({
+          success: false,
+          message: 'The maximum quota of 7 Lab Custodian accounts has been reached.'
+        });
       }
+      assignedRole = 'staff';
+    } else {
+      assignedRole = 'borrower';
     }
 
     // Hash password

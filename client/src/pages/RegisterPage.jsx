@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Package, Lock, Mail, User, Phone, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Package, Lock, Mail, User, Phone, AlertCircle, ArrowRight, ShieldCheck, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../services/api';
 
 export function RegisterPage({ setActivePage }) {
   const { register } = useAuth();
@@ -12,6 +13,21 @@ export function RegisterPage({ setActivePage }) {
   const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isFirstAdmin, setIsFirstAdmin] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    api.getAdminStatus()
+      .then(res => {
+        if (isMounted && res.success && !res.hasAdmin) {
+          setIsFirstAdmin(true);
+        }
+      })
+      .catch(() => {
+        // Safe fallback
+      });
+    return () => { isMounted = false; };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,7 +40,7 @@ export function RegisterPage({ setActivePage }) {
 
     setIsLoading(true);
     try {
-      await register({
+      const res = await register({
         name: name.trim(),
         email: email.trim(),
         password,
@@ -33,8 +49,12 @@ export function RegisterPage({ setActivePage }) {
         phone: phone.trim() || null
       });
 
-      // Regular accounts are created as borrowers and routed to the equipment catalog
-      setActivePage('catalog');
+      // If this account was provisioned as Admin, route straight to Admin Dashboard
+      if (res && res.user && res.user.role === 'admin') {
+        setActivePage('admin');
+      } else {
+        setActivePage('catalog');
+      }
     } catch (err) {
       setError(err.message || 'Registration failed.');
     } finally {
@@ -51,9 +71,20 @@ export function RegisterPage({ setActivePage }) {
         </div>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight">Create Institutional Account</h2>
         <p className="text-xs text-slate-500">
-          Register your student or faculty profile to browse and borrow college laboratory equipment.
+          Register your institutional profile to borrow lab equipment or manage campus inventory.
         </p>
       </div>
+
+      {/* First-time system admin notice banner */}
+      {isFirstAdmin && (
+        <div className="p-3.5 bg-purple-50 border border-purple-200 rounded-2xl flex items-start gap-2.5 text-xs text-purple-900">
+          <Shield className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+          <div className="leading-relaxed">
+            <span className="font-bold">System Setup Notice: </span>
+            No administrator accounts currently exist. This initial registration will automatically receive <strong>Master System Administrator</strong> privileges!
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2">
@@ -173,7 +204,7 @@ export function RegisterPage({ setActivePage }) {
             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
             <>
-              Register & Browse Equipment
+              {isFirstAdmin ? 'Initialize Master Admin & Enter' : 'Create Account & Enter'}
               <ArrowRight className="w-4 h-4" />
             </>
           )}
@@ -196,7 +227,7 @@ export function RegisterPage({ setActivePage }) {
           className="text-slate-500 hover:text-purple-700 font-semibold flex items-center gap-1 transition"
         >
           <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
-          Admin Portal
+          Admin Portal Sign In →
         </button>
       </div>
     </div>
