@@ -17,7 +17,7 @@ const generalItems = [
     available_quantity: 6,
     condition: 'excellent',
     status: 'available',
-    image_url: 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=600&q=80',
+    image_url: 'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=600&q=80',
     max_borrow_days: 5
   },
   {
