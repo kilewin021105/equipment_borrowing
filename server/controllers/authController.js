@@ -30,6 +30,27 @@ exports.register = async (req, res, next) => {
     const allowedRoles = ['borrower', 'staff', 'admin'];
     const assignedRole = allowedRoles.includes(role) ? role : 'borrower';
 
+    // Role Limitation / Quota Enforcements:
+    // Administrator: max 5 users
+    // Lab Custodian: max 7 users
+    if (assignedRole === 'admin') {
+      const adminCount = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get().count;
+      if (adminCount >= 5) {
+        return res.status(400).json({
+          success: false,
+          message: 'The maximum quota of 5 Administrator accounts has been reached. Please choose another role or contact an administrator.'
+        });
+      }
+    } else if (assignedRole === 'staff') {
+      const staffCount = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'staff'").get().count;
+      if (staffCount >= 7) {
+        return res.status(400).json({
+          success: false,
+          message: 'The maximum quota of 7 Lab Custodian accounts has been reached. Please choose another role.'
+        });
+      }
+    }
+
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -235,4 +256,47 @@ exports.updateProfile = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.getRoleLimits = (req, res, next) => {
+  try {
+    const adminCount = Number(db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get().count || 0);
+    const staffCount = Number(db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'staff'").get().count || 0);
+    const borrowerCount = Number(db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'borrower'").get().count || 0);
+
+    const limits = {
+      admin: {
+        role: 'admin',
+        title: 'Administrator',
+        current: adminCount,
+        max: 5,
+        available: Math.max(0, 5 - adminCount),
+        isFull: adminCount >= 5
+      },
+      staff: {
+        role: 'staff',
+        title: 'Lab Custodian',
+        current: staffCount,
+        max: 7,
+        available: Math.max(0, 7 - staffCount),
+        isFull: staffCount >= 7
+      },
+      borrower: {
+        role: 'borrower',
+        title: 'Student / Faculty',
+        current: borrowerCount,
+        max: null,
+        available: null,
+        isFull: false
+      }
+    };
+
+    res.json({
+      success: true,
+      data: limits
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 

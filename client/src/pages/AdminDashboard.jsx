@@ -522,8 +522,56 @@ export function AdminDashboard() {
       {/* Tab 4: USER MANAGEMENT */}
       {adminTab === 'users' && (
         <div className="space-y-4">
+          
+          {/* Role Quotas & Capacity Overview */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Administrator Quota</span>
+                <span className="text-xl font-extrabold text-purple-950">
+                  {userList.filter(u => u.role === 'admin').length} <span className="text-sm font-semibold text-slate-400">/ 5 max</span>
+                </span>
+              </div>
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                userList.filter(u => u.role === 'admin').length >= 5 
+                  ? 'bg-rose-100 text-rose-700' 
+                  : 'bg-purple-100 text-purple-700'
+              }`}>
+                {userList.filter(u => u.role === 'admin').length >= 5 ? 'Quota Full' : `${5 - userList.filter(u => u.role === 'admin').length} spots left`}
+              </span>
+            </div>
+
+            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Lab Custodian Quota</span>
+                <span className="text-xl font-extrabold text-indigo-950">
+                  {userList.filter(u => u.role === 'staff').length} <span className="text-sm font-semibold text-slate-400">/ 7 max</span>
+                </span>
+              </div>
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                userList.filter(u => u.role === 'staff').length >= 7 
+                  ? 'bg-rose-100 text-rose-700' 
+                  : 'bg-indigo-100 text-indigo-700'
+              }`}>
+                {userList.filter(u => u.role === 'staff').length >= 7 ? 'Quota Full' : `${7 - userList.filter(u => u.role === 'staff').length} spots left`}
+              </span>
+            </div>
+
+            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Student / Faculty Users</span>
+                <span className="text-xl font-extrabold text-blue-950">
+                  {userList.filter(u => u.role === 'borrower').length}
+                </span>
+              </div>
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700">
+                Unlimited
+              </span>
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-            <h3 className="font-bold text-slate-900 text-sm">Registered Accounts ({userList.length})</h3>
+            <h3 className="font-bold text-slate-900 text-sm">Registered Institutional Accounts ({userList.length})</h3>
             <div className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
@@ -557,46 +605,61 @@ export function AdminDashboard() {
                       u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
                       u.department.toLowerCase().includes(userSearch.toLowerCase())
                     )
-                    .map(u => (
-                      <tr key={u.id} className="hover:bg-slate-50 transition">
-                        <td className="p-3">
-                          <span className="font-bold text-slate-900 block">{u.name}</span>
-                          <span className="text-slate-400 text-[11px]">{u.email}</span>
-                        </td>
-                        <td className="p-3 text-slate-600">{u.department}</td>
-                        <td className="p-3 font-mono text-slate-600">{u.student_id || '—'}</td>
-                        <td className="p-3">
-                          <select
-                            value={u.role}
-                            onChange={(e) => handleUserRoleChange(u.id, e.target.value)}
-                            className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-semibold text-slate-800"
-                          >
-                            <option value="borrower">Borrower (Student/Faculty)</option>
-                            <option value="staff">Lab Custodian / Staff</option>
-                            <option value="admin">System Administrator</option>
-                          </select>
-                        </td>
-                        <td className="p-3">
-                          <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${
-                            u.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                          }`}>
-                            {u.status}
-                          </span>
-                        </td>
-                        <td className="p-3 text-right">
-                          <button
-                            onClick={() => handleUserStatusToggle(u)}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
-                              u.status === 'active'
-                                ? 'border border-rose-200 text-rose-700 hover:bg-rose-50'
-                                : 'border border-emerald-200 text-emerald-700 hover:bg-emerald-50'
-                            }`}
-                          >
-                            {u.status === 'active' ? 'Suspend' : 'Activate'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    .map(u => {
+                      const adminCount = userList.filter(x => x.role === 'admin').length;
+                      const staffCount = userList.filter(x => x.role === 'staff').length;
+
+                      return (
+                        <tr key={u.id} className="hover:bg-slate-50 transition">
+                          <td className="p-3">
+                            <span className="font-bold text-slate-900 block">{u.name}</span>
+                            <span className="text-slate-400 text-[11px]">{u.email}</span>
+                          </td>
+                          <td className="p-3 text-slate-600">{u.department}</td>
+                          <td className="p-3 font-mono text-slate-600">{u.student_id || '—'}</td>
+                          <td className="p-3">
+                            <select
+                              value={u.role}
+                              onChange={(e) => handleUserRoleChange(u.id, e.target.value)}
+                              className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-semibold text-slate-800"
+                            >
+                              <option value="borrower">Borrower (Student/Faculty)</option>
+                              <option 
+                                value="staff" 
+                                disabled={staffCount >= 7 && u.role !== 'staff'}
+                              >
+                                Lab Custodian {staffCount >= 7 && u.role !== 'staff' ? '(Full: 7/7)' : `(${staffCount}/7)`}
+                              </option>
+                              <option 
+                                value="admin" 
+                                disabled={adminCount >= 5 && u.role !== 'admin'}
+                              >
+                                System Administrator {adminCount >= 5 && u.role !== 'admin' ? '(Full: 5/5)' : `(${adminCount}/5)`}
+                              </option>
+                            </select>
+                          </td>
+                          <td className="p-3">
+                            <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${
+                              u.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                            }`}>
+                              {u.status}
+                            </span>
+                          </td>
+                          <td className="p-3 text-right">
+                            <button
+                              onClick={() => handleUserStatusToggle(u)}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
+                                u.status === 'active'
+                                  ? 'border border-rose-200 text-rose-700 hover:bg-rose-50'
+                                  : 'border border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+                              }`}
+                            >
+                              {u.status === 'active' ? 'Suspend' : 'Activate'}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>

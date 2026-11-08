@@ -45,6 +45,7 @@ export const api = {
   // Auth
   login: (credentials) => request('/auth/login', { method: 'POST', body: credentials }),
   register: (userData) => request('/auth/register', { method: 'POST', body: userData }),
+  getRoleLimits: () => request('/auth/role-limits'),
   getMe: () => request('/auth/me'),
   updateProfile: (profileData) => request('/auth/profile', { method: 'PUT', body: profileData }),
 
