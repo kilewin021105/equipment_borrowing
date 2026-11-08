@@ -51,6 +51,26 @@ exports.register = async (req, res, next) => {
 
     const userId = Number(result.lastInsertRowid);
 
+    // Sync to Supabase in real-time if connected
+    if (process.env.SUPABASE_URL) {
+      try {
+        const { supabase } = require('../db/supabaseClient');
+        await supabase.from('users').upsert({
+          id: userId,
+          name: name.trim(),
+          email: email.toLowerCase().trim(),
+          password: hashedPassword,
+          role: assignedRole,
+          student_id: student_id ? student_id.trim() : null,
+          department: department ? department.trim() : 'Bachelor Science of information technology(BSIT)',
+          phone: phone ? phone.trim() : null,
+          status: 'active'
+        });
+      } catch (sbErr) {
+        console.warn('Notice: Background Supabase sync:', sbErr.message);
+      }
+    }
+
     // Generate JWT
     const token = jwt.sign(
       { id: userId, email: email.toLowerCase().trim(), role: assignedRole },

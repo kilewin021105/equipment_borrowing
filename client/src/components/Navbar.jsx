@@ -1,40 +1,16 @@
 import React, { useState } from 'react';
 import { 
   Package, Bell, User, LogOut, Shield, ChevronDown, Check, 
-  Menu, X, Sparkles, Laptop, ClipboardList, Layers, Settings, AlertTriangle
+  Menu, X, Laptop, ClipboardList, Layers, Settings
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { RoleBadge } from './Badge';
 
 export function Navbar({ activePage, setActivePage, onOpenBorrowSlip }) {
-  const { user, logout, notifications, unreadNotifCount, markAllNotificationsRead, login } = useAuth();
+  const { user, logout, notifications, unreadNotifCount, markAllNotificationsRead } = useAuth();
   const [showNotifs, setShowNotifs] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showDemoSwitch, setShowDemoSwitch] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const demoAccounts = [
-    { label: 'Student (BSIT)', email: 'student@campusequip.edu', pass: 'student123', role: 'borrower' },
-    { label: 'Student (BSCRIM - Overdue)', email: 'maria.santos@campusequip.edu', pass: 'student123', role: 'borrower' },
-    { label: 'Student (BSHM)', email: 'gabriel.ramos@campusequip.edu', pass: 'student123', role: 'borrower' },
-    { label: 'Student (Education)', email: 'claire.mendoza@campusequip.edu', pass: 'student123', role: 'borrower' },
-    { label: 'Lab Custodian / Staff', email: 'custodian@campusequip.edu', pass: 'staff123', role: 'staff' },
-    { label: 'System Administrator', email: 'admin@campusequip.edu', pass: 'admin123', role: 'admin' }
-  ];
-
-  const handleQuickSwitch = async (account) => {
-    try {
-      await login(account.email, account.pass);
-      setShowDemoSwitch(false);
-      setShowUserMenu(false);
-      // Auto-navigate to appropriate page
-      if (account.role === 'admin') setActivePage('admin');
-      else if (account.role === 'staff') setActivePage('staff');
-      else setActivePage('catalog');
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
@@ -114,7 +90,7 @@ export function Navbar({ activePage, setActivePage, onOpenBorrowSlip }) {
                   }`}
                 >
                   <Shield className="w-4 h-4 text-purple-600" />
-                  Admin Analytics & CRUD
+                  Admin Control Center
                 </button>
               )}
             </nav>
@@ -123,43 +99,6 @@ export function Navbar({ activePage, setActivePage, onOpenBorrowSlip }) {
           {/* Right Controls */}
           <div className="flex items-center gap-3">
             
-            {/* Quick Demo Role Switcher Pill */}
-            <div className="relative">
-              <button
-                onClick={() => setShowDemoSwitch(!showDemoSwitch)}
-                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 text-amber-800 rounded-lg text-xs font-bold hover:bg-amber-100 transition shadow-xs"
-                title="Switch demo persona for testing"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                <span>Switch Role</span>
-                <ChevronDown className="w-3 h-3 text-amber-600" />
-              </button>
-
-              {showDemoSwitch && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 p-2 z-50 text-xs">
-                  <div className="px-3 py-2 border-b border-slate-100 mb-1">
-                    <p className="font-bold text-slate-800">Quick Persona Switch</p>
-                    <p className="text-slate-500 text-[11px]">Instant login for evaluation</p>
-                  </div>
-                  {demoAccounts.map(acc => (
-                    <button
-                      key={acc.email}
-                      onClick={() => handleQuickSwitch(acc)}
-                      className={`w-full text-left p-2 rounded-lg transition flex items-center justify-between ${
-                        user?.email === acc.email ? 'bg-blue-50 font-bold text-blue-700' : 'hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      <div>
-                        <div className="font-semibold">{acc.label}</div>
-                        <div className="text-[10px] text-slate-400">{acc.email}</div>
-                      </div>
-                      {user?.email === acc.email && <Check className="w-4 h-4 text-blue-600" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Notification Bell */}
             {user && (
               <div className="relative">
@@ -289,7 +228,7 @@ export function Navbar({ activePage, setActivePage, onOpenBorrowSlip }) {
                   onClick={() => setActivePage('register')}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition"
                 >
-                  Register Account
+                  Create Account
                 </button>
               </div>
             )}
@@ -339,22 +278,24 @@ export function Navbar({ activePage, setActivePage, onOpenBorrowSlip }) {
             </button>
           )}
 
-          <div className="pt-2 border-t border-slate-100">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Switch Demo Account</p>
-            {demoAccounts.map(acc => (
+          {!user && (
+            <div className="pt-2 border-t border-slate-100 flex gap-2">
               <button
-                key={acc.email}
-                onClick={() => { handleQuickSwitch(acc); setMobileMenuOpen(false); }}
-                className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 flex items-center justify-between"
+                onClick={() => { setActivePage('login'); setMobileMenuOpen(false); }}
+                className="w-1/2 py-2 text-center text-xs font-bold text-slate-700 bg-slate-50 rounded-xl"
               >
-                <span>{acc.label}</span>
-                <span className="text-[10px] text-slate-400">{acc.role}</span>
+                Sign In
               </button>
-            ))}
-          </div>
+              <button
+                onClick={() => { setActivePage('register'); setMobileMenuOpen(false); }}
+                className="w-1/2 py-2 text-center text-xs font-bold text-white bg-blue-600 rounded-xl"
+              >
+                Create Account
+              </button>
+            </div>
+          )}
         </div>
       )}
     </header>
   );
 }
-

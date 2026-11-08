@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Package, Lock, Mail, User, Building, Phone, AlertCircle, ArrowRight } from 'lucide-react';
+import { Package, Lock, Mail, User, Building, Phone, AlertCircle, ArrowRight, Shield, Layers, UserCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function RegisterPage({ setActivePage }) {
   const { register } = useAuth();
+  const [role, setRole] = useState('admin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,16 +25,24 @@ export function RegisterPage({ setActivePage }) {
 
     setIsLoading(true);
     try {
-      await register({
+      const res = await register({
         name: name.trim(),
         email: email.trim(),
         password,
         student_id: studentId.trim() || null,
         department,
         phone: phone.trim() || null,
-        role: 'borrower'
+        role
       });
-      setActivePage('catalog');
+
+      // Auto-navigate to appropriate portal based on chosen role
+      if (role === 'admin') {
+        setActivePage('admin');
+      } else if (role === 'staff') {
+        setActivePage('staff');
+      } else {
+        setActivePage('catalog');
+      }
     } catch (err) {
       setError(err.message || 'Registration failed.');
     } finally {
@@ -42,15 +51,15 @@ export function RegisterPage({ setActivePage }) {
   };
 
   return (
-    <div className="max-w-lg mx-auto my-10 p-8 bg-white rounded-3xl border border-slate-200 shadow-xl space-y-6">
+    <div className="max-w-xl mx-auto my-10 p-8 bg-white rounded-3xl border border-slate-200 shadow-xl space-y-6">
       
       <div className="text-center space-y-2">
         <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white mx-auto shadow-md shadow-blue-500/20">
           <Package className="w-6 h-6" />
         </div>
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Create Campus Borrower Account</h2>
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Create Your Campus Account</h2>
         <p className="text-xs text-slate-500">
-          Access university laboratories, check out specialized devices, and track academic loans.
+          Set up your institutional profile to borrow lab assets, approve equipment requests, or manage inventory.
         </p>
       </div>
 
@@ -62,6 +71,68 @@ export function RegisterPage({ setActivePage }) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        
+        {/* Role Selector Cards */}
+        <div>
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            Select Account Role *
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+            
+            <button
+              type="button"
+              onClick={() => setRole('admin')}
+              className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between ${
+                role === 'admin'
+                  ? 'bg-purple-50/80 border-purple-500 ring-2 ring-purple-400 text-purple-950 shadow-xs'
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <Shield className={`w-4 h-4 ${role === 'admin' ? 'text-purple-600' : 'text-slate-400'}`} />
+                <span className={`w-2 h-2 rounded-full ${role === 'admin' ? 'bg-purple-600' : 'bg-slate-200'}`} />
+              </div>
+              <span className="font-bold text-xs block">Administrator</span>
+              <span className="text-[10px] text-slate-500 mt-0.5 leading-tight">Master inventory CRUD, all roles & analytics</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRole('staff')}
+              className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between ${
+                role === 'staff'
+                  ? 'bg-indigo-50/80 border-indigo-500 ring-2 ring-indigo-400 text-indigo-950 shadow-xs'
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <Layers className={`w-4 h-4 ${role === 'staff' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                <span className={`w-2 h-2 rounded-full ${role === 'staff' ? 'bg-indigo-600' : 'bg-slate-200'}`} />
+              </div>
+              <span className="font-bold text-xs block">Lab Custodian</span>
+              <span className="text-[10px] text-slate-500 mt-0.5 leading-tight">Approvals, counter dispatch & return check-in</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRole('borrower')}
+              className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between ${
+                role === 'borrower'
+                  ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-400 text-blue-950 shadow-xs'
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <UserCheck className={`w-4 h-4 ${role === 'borrower' ? 'text-blue-600' : 'text-slate-400'}`} />
+                <span className={`w-2 h-2 rounded-full ${role === 'borrower' ? 'bg-blue-600' : 'bg-slate-200'}`} />
+              </div>
+              <span className="font-bold text-xs block">Student / Faculty</span>
+              <span className="text-[10px] text-slate-500 mt-0.5 leading-tight">Borrow lab equipment & download digital slips</span>
+            </button>
+
+          </div>
+        </div>
+
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
             Full Name *
@@ -70,10 +141,10 @@ export function RegisterPage({ setActivePage }) {
             <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="e.g. Julian Davies"
+              placeholder="e.g. Juan Dela Cruz"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
               required
             />
           </div>
@@ -82,16 +153,16 @@ export function RegisterPage({ setActivePage }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              University Email *
+              Email Address *
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="email"
-                placeholder="name@campusequip.edu"
+                placeholder="you@campus.edu"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
                 required
               />
             </div>
@@ -108,7 +179,7 @@ export function RegisterPage({ setActivePage }) {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
                 required
               />
             </div>
@@ -118,14 +189,14 @@ export function RegisterPage({ setActivePage }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Student / Faculty ID
+              Student / Employee ID
             </label>
             <input
               type="text"
-              placeholder="e.g. STU-2024-8821"
+              placeholder="e.g. BSIT-2026-0001"
               value={studentId}
               onChange={(e) => setStudentId(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
             />
           </div>
 
@@ -137,10 +208,10 @@ export function RegisterPage({ setActivePage }) {
               <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="tel"
-                placeholder="+1 (555) 000-0000"
+                placeholder="+63 912 345 6789"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
               />
             </div>
           </div>
@@ -171,7 +242,7 @@ export function RegisterPage({ setActivePage }) {
             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
             <>
-              Complete Registration
+              Create Account & Enter Portal
               <ArrowRight className="w-4 h-4" />
             </>
           )}
@@ -185,11 +256,10 @@ export function RegisterPage({ setActivePage }) {
             onClick={() => setActivePage('login')}
             className="text-blue-600 font-bold hover:underline"
           >
-            Sign in to existing account
+            Sign in to your account
           </button>
         </p>
       </div>
     </div>
   );
 }
-

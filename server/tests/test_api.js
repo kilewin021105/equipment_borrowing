@@ -59,54 +59,78 @@ async function runTests() {
     }
   }
 
+  const timestamp = Date.now();
+  const testStudentEmail = `test.student.${timestamp}@campusequip.edu`;
+  const testStaffEmail = `test.staff.${timestamp}@campusequip.edu`;
+  const testAdminEmail = `test.admin.${timestamp}@campusequip.edu`;
+
+  let studentToken = null;
+  let staffToken = null;
+  let adminToken = null;
+  let studentUserId = null;
+  let staffUserId = null;
+  let adminUserId = null;
+
   try {
     // 1. Health check
     const health = await makeRequest('GET', '/api/health');
     assert(health.status === 200 && health.body.status === 'healthy', 'GET /api/health returns healthy status');
 
-    // 2. Authentication: Student Login
-    const loginRes = await makeRequest('POST', '/api/auth/login', {
-      email: 'student@campusequip.edu',
-      password: 'student123'
-    });
-    assert(loginRes.status === 200 && loginRes.body.token, 'POST /api/auth/login succeeds with valid student credentials');
-    const studentToken = loginRes.body.token;
-
-    // 3. Authentication: Staff Login
-    const staffLogin = await makeRequest('POST', '/api/auth/login', {
-      email: 'custodian@campusequip.edu',
-      password: 'staff123'
-    });
-    assert(staffLogin.status === 200 && staffLogin.body.user.role === 'staff', 'POST /api/auth/login succeeds for lab staff');
-    const staffToken = staffLogin.body.token;
-
-    // 4. Authentication: Admin Login
-    const adminLogin = await makeRequest('POST', '/api/auth/login', {
-      email: 'admin@campusequip.edu',
-      password: 'admin123'
-    });
-    assert(adminLogin.status === 200 && adminLogin.body.user.role === 'admin', 'POST /api/auth/login succeeds for system admin');
-    const adminToken = adminLogin.body.token;
-
-    // 5. Auth /me profile & stats
-    const meRes = await makeRequest('GET', '/api/auth/me', null, studentToken);
-    assert(meRes.status === 200 && meRes.body.user.email === 'student@campusequip.edu', 'GET /api/auth/me returns authenticated user details');
-
-    // 6. Registration of new user
-    const testEmail = `test.borrower.${Date.now()}@campusequip.edu`;
-    const regRes = await makeRequest('POST', '/api/auth/register', {
-      name: 'Test Borrower Account',
-      email: testEmail,
-      password: 'password123',
+    // 2. Dynamic Account Registration: Student / Borrower
+    const regStudent = await makeRequest('POST', '/api/auth/register', {
+      name: 'Dynamic Student User',
+      email: testStudentEmail,
+      password: 'studentpassword123',
+      role: 'borrower',
+      student_id: 'BSIT-2026-001',
       department: 'Bachelor Science of information technology(BSIT)',
-      student_id: 'BSIT-TEST-99'
+      phone: '+63 917 123 4567'
     });
-    assert(regRes.status === 201 && regRes.body.token, 'POST /api/auth/register creates user account and issues JWT');
+    assert(regStudent.status === 201 && regStudent.body.token, 'POST /api/auth/register creates Student account');
+    studentToken = regStudent.body.token;
+    studentUserId = regStudent.body.user.id;
+
+    // 3. Dynamic Account Registration: Lab Custodian / Staff
+    const regStaff = await makeRequest('POST', '/api/auth/register', {
+      name: 'Dynamic Custodian User',
+      email: testStaffEmail,
+      password: 'staffpassword123',
+      role: 'staff',
+      department: 'Bachelor Science of information technology(BSIT)',
+      phone: '+63 918 234 5678'
+    });
+    assert(regStaff.status === 201 && regStaff.body.token && regStaff.body.user.role === 'staff', 'POST /api/auth/register creates Lab Custodian / Staff account');
+    staffToken = regStaff.body.token;
+    staffUserId = regStaff.body.user.id;
+
+    // 4. Dynamic Account Registration: System Administrator
+    const regAdmin = await makeRequest('POST', '/api/auth/register', {
+      name: 'Dynamic System Admin',
+      email: testAdminEmail,
+      password: 'adminpassword123',
+      role: 'admin',
+      department: 'Bachelor Science of information technology(BSIT)',
+      phone: '+63 919 345 6789'
+    });
+    assert(regAdmin.status === 201 && regAdmin.body.token && regAdmin.body.user.role === 'admin', 'POST /api/auth/register creates Admin account');
+    adminToken = regAdmin.body.token;
+    adminUserId = regAdmin.body.user.id;
+
+    // 5. Authentication: Student Login
+    const loginStudent = await makeRequest('POST', '/api/auth/login', {
+      email: testStudentEmail,
+      password: 'studentpassword123'
+    });
+    assert(loginStudent.status === 200 && loginStudent.body.token, 'POST /api/auth/login authenticates registered student');
+
+    // 6. Auth /me profile & stats
+    const meRes = await makeRequest('GET', '/api/auth/me', null, studentToken);
+    assert(meRes.status === 200 && meRes.body.user.email === testStudentEmail, 'GET /api/auth/me returns authenticated user details');
 
     // 7. Rejection of duplicate registration
     const dupRes = await makeRequest('POST', '/api/auth/register', {
       name: 'Duplicate',
-      email: testEmail,
+      email: testStudentEmail,
       password: 'password123'
     });
     assert(dupRes.status === 400 && dupRes.body.success === false, 'POST /api/auth/register rejects duplicate email address');
@@ -146,7 +170,7 @@ async function runTests() {
     }, studentToken);
     assert(studentCreate.status === 403, 'POST /api/equipment blocks borrower role with 403 Forbidden');
 
-    // 12. Submit Borrow Request as newly registered user
+    // 12. Submit Borrow Request as student
     const borrowRes = await makeRequest('POST', '/api/borrow', {
       equipment_id: createdEquipId,
       quantity: 1,
@@ -155,7 +179,7 @@ async function runTests() {
       purpose: 'Heat sink thermal dissipation testing',
       course_code: 'ME-320',
       faculty_sponsor: 'Dr. Marcus Reyes'
-    }, regRes.body.token);
+    }, studentToken);
     assert(borrowRes.status === 201 && borrowRes.body.data.reference_code, 'POST /api/borrow creates pending borrow request with ref code');
     const borrowReqId = borrowRes.body.data.id;
     const refCode = borrowRes.body.data.reference_code;
@@ -191,7 +215,7 @@ async function runTests() {
     assert(equipAfterReturn.body.data.available_quantity === 3, 'Available inventory restored back to 3 upon return');
 
     // 18. Notifications endpoint
-    const notifs = await makeRequest('GET', '/api/notifications', null, regRes.body.token);
+    const notifs = await makeRequest('GET', '/api/notifications', null, studentToken);
     assert(notifs.status === 200 && notifs.body.data.length > 0, 'GET /api/notifications returns user alert notifications');
 
     // 19. Dashboard Summary Stats
@@ -205,10 +229,10 @@ async function runTests() {
     // Clean up created test equipment
     await makeRequest('DELETE', `/api/equipment/${createdEquipId}`, null, adminToken);
 
-    // Clean up created test user (cascades borrow requests & notifications)
-    if (regRes && regRes.body && regRes.body.user) {
-      await makeRequest('DELETE', `/api/users/${regRes.body.user.id}`, null, adminToken);
-    }
+    // Clean up created test users
+    if (studentUserId) await makeRequest('DELETE', `/api/users/${studentUserId}`, null, adminToken);
+    if (staffUserId) await makeRequest('DELETE', `/api/users/${staffUserId}`, null, adminToken);
+    if (adminUserId) await makeRequest('DELETE', `/api/users/${adminUserId}`, null, adminToken);
 
   } catch (err) {
     console.error('Test execution error:', err);
