@@ -1,0 +1,13 @@
+# Railway nixpacks config — this file must be in the server/ directory
+# because Railway Settings has Root Directory set to "server"
+[phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = ["npm install"]
+
+[phases.build]
+cmds = []
+
+[start]
+cmd = "node startup.js"
