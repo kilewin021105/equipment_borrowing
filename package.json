@@ -9,7 +9,7 @@
     "transfer:supabase": "node server/scripts/transfer_to_supabase.js",
     "dev:server": "node server/server.js",
     "dev:client": "npm --prefix client run dev",
-    "build": "npm --prefix client run build",
+    "build:client": "npm --prefix client run build",
     "test": "node server/tests/test_api.js",
     "test:all": "node server/tests/test_api.js && node server/tests/verify_frontend_and_api.js"
   },
@@ -23,5 +23,8 @@
     "full-stack"
   ],
   "author": "CampusEquip Team",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  }
 }
