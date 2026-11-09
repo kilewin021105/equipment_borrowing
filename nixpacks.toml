@@ -1,0 +1,12 @@
+# Railway/Nixpacks build config — backend only, frontend is on Vercel
+[phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = ["npm install --prefix server"]
+
+[phases.build]
+cmds = []
+
+[start]
+cmd = "node server/server.js"
