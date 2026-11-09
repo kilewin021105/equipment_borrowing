@@ -3,6 +3,7 @@ node_modules/
 *.log
 dist/
 .DS_Store
+server/data/*.db
 server/data/*.db-wal
 server/data/*.db-shm
 
