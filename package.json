@@ -4,7 +4,7 @@
   "description": "College Equipment Borrowing and Inventory Management System",
   "main": "server/server.js",
   "scripts": {
-    "start": "node server/server.js",
+    "start": "node server/startup.js",
     "seed": "node server/db/seed.js",
     "transfer:supabase": "node server/scripts/transfer_to_supabase.js",
     "dev:server": "node server/server.js",

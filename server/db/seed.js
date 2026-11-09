@@ -688,7 +688,13 @@ async function seed() {
   console.log('=======================================================');
 }
 
-seed().catch((err) => {
-  console.error('Seeding error:', err);
-  process.exit(1);
-});
+// Export for use by startup.js (auto-seed on first deploy)
+module.exports = { seed };
+
+// Only auto-run when called directly (npm run seed)
+if (require.main === module) {
+  seed().catch((err) => {
+    console.error('Seeding error:', err);
+    process.exit(1);
+  });
+}

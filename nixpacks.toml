@@ -9,4 +9,4 @@ cmds = ["npm install --prefix server"]
 cmds = ["echo 'Backend only - no build step needed'"]
 
 [start]
-cmd = "node server/server.js"
+cmd = "node server/startup.js"
