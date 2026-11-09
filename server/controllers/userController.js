@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const { db, logAudit } = require('../db/database');
+const { supabase, supabaseUrl } = require('../db/supabaseClient');
 
 exports.getAllUsers = (req, res, next) => {
   try {
@@ -98,7 +99,6 @@ exports.updateUser = (req, res, next) => {
     `).run(role || null, status || null, department || null, name || null, phone || null, id);
 
     // Sync to Supabase in background
-    const { supabase, supabaseUrl } = require('../db/supabaseClient');
     if (supabaseUrl && supabase) {
       try {
         supabase.from('users').update({

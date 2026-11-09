@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { db, logAudit, createNotification } = require('../db/database');
 const { JWT_SECRET } = require('../middleware/auth');
+const { supabase, supabaseUrl } = require('../db/supabaseClient');
 
 exports.register = async (req, res, next) => {
   try {
@@ -79,7 +80,6 @@ exports.register = async (req, res, next) => {
     const userId = Number(result.lastInsertRowid);
 
     // Sync to Supabase in real-time if connected
-    const { supabase, supabaseUrl } = require('../db/supabaseClient');
     if (supabaseUrl && supabase) {
       try {
         await supabase.from('users').upsert({
