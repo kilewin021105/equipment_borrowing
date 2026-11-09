@@ -1,12 +1,9 @@
-# Railway/Nixpacks build config — backend API only, frontend is deployed separately on Vercel
-[phases.setup]
-nixPkgs = ["nodejs_22"]
-
+# Railway/Nixpacks build config — backend API only, frontend is on Vercel
 [phases.install]
 cmds = ["npm install --prefix server"]
 
 [phases.build]
-cmds = ["echo 'Backend only - no build step needed'"]
+cmds = ["echo 'No build step needed for backend'"]
 
 [start]
 cmd = "node server/startup.js"
