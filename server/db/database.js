@@ -1,4 +1,4 @@
-const Database = require('better-sqlite3');
+const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 const fs = require('fs');
 
@@ -9,7 +9,7 @@ if (!fs.existsSync(dataDir)) {
 }
 
 const dbPath = path.join(dataDir, 'campusequip.db');
-const db = new Database(dbPath);
+const db = new DatabaseSync(dbPath);
 
 // Enable Foreign Keys and WAL mode for high performance and integrity
 db.exec('PRAGMA foreign_keys = ON;');
