@@ -2,8 +2,8 @@ const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 const fs = require('fs');
 
-// Railway persistent volumes can be mounted at /app/server/data.
-// Set DATABASE_PATH to keep the SQLite file on that mounted volume.
+// Render persistent disks should be mounted at /var/data.
+// Set DATABASE_PATH to the mounted persistent disk path.
 const defaultDbPath = path.join(__dirname, '..', 'data', 'campusequip.db');
 const dbPath = process.env.DATABASE_PATH
   ? path.resolve(process.env.DATABASE_PATH)
