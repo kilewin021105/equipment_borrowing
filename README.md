@@ -248,3 +248,43 @@ This project is released under the MIT License.
 
 #   e q u i p m e n t _ b o r r o w i n g  
  
+
+## Production deployment (Vercel + Railway)
+
+The current backend still uses SQLite. Deploy the React frontend and Express API as separate services, and keep SQLite on persistent storage.
+
+### Railway — backend API
+
+1. Deploy this repository to Railway from the **repository root** (not the `client` or `server` subfolder).
+2. Add a Railway Volume mounted at `/app/server/data`. This is essential: without persistent storage, SQLite data can disappear when the service is replaced or redeployed.
+3. Set these Railway service variables:
+
+   | Variable | Value |
+   | --- | --- |
+   | `NODE_ENV` | `production` |
+   | `JWT_SECRET` | A unique random secret of at least 32 bytes |
+   | `DATABASE_PATH` | `/app/server/data/campusequip.db` |
+   | `CLIENT_URL` | Your Vercel origin, e.g. `https://your-app.vercel.app` |
+
+   Multiple allowed frontend origins can be comma-separated in `CLIENT_URL`.
+4. Build command: `npm install`. Start command: `npm start`.
+5. Generate a public Railway domain, then test `https://YOUR-RAILWAY-DOMAIN/api/health`. It should return `"status":"healthy"`.
+
+### Vercel — frontend
+
+1. Import the same repository into Vercel.
+2. Set **Root Directory** to `client`.
+3. Framework preset: **Vite**; build command: `npm run build`; output directory: `dist`.
+4. Add environment variable `VITE_API_URL` with the Railway origin only, e.g. `https://your-api.up.railway.app` (do not append `/api`).
+5. Deploy. If you add client-side routes later, configure a Vercel rewrite so unknown paths serve `/index.html`.
+
+### Important database and security notes
+
+- The Express controllers still use SQLite directly. The existing Supabase schema and transfer script do **not** switch the live API to PostgreSQL just by setting `SUPABASE_URL`.
+- The existing `supabase_schema_and_data.sql` starts by dropping six tables. **Do not run it on a Supabase project containing data unless you intentionally want those tables and records deleted.** Back up and review it first.
+- The seed script clears existing data before reseeding. Never run it against a production database with real users or transactions.
+- Change or remove all demo accounts/passwords before inviting real users. Keep `JWT_SECRET` private and never put backend secrets in Vercel's `VITE_*` variables.
+
+### Smoke test
+
+Test borrower registration/login, staff approval/dispatch/return workflows, admin inventory/category/user management, audit logs, nested-page refresh, and persistence after a Railway redeploy. Confirm records remain after redeployment before opening the system to users.
