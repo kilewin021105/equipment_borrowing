@@ -1,6 +1,6 @@
 // In production (Vercel), VITE_API_URL points to the Railway backend.
 // In unified deployments (Railway only) or local dev, it falls back to relative '/api'.
-const API_ORIGIN = (import.meta.env.VITE_API_URL || '').trim().replace(/\\/+$/, '');
+const API_ORIGIN = (import.meta.env.VITE_API_URL || '').trim().replace(/\/+$/, '');
 const API_BASE = API_ORIGIN ? `${API_ORIGIN}/api` : '/api';
 
 async function request(endpoint, options = {}) {
