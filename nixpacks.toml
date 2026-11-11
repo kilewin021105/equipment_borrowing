@@ -1,9 +1,15 @@
-# Railway/Nixpacks build config — backend API only, frontend is on Vercel
+[variables]
+NIXPACKS_NODE_VERSION = "22"
+NODE_ENV = "production"
+
+[phases.setup]
+nixPkgs = ["python3", "gcc", "gnumake"]
+
 [phases.install]
 cmds = ["npm install --prefix server"]
 
 [phases.build]
-cmds = ["echo 'No build step needed for backend'"]
+cmds = ["echo 'Backend dependencies installed successfully'"]
 
 [start]
 cmd = "node server/startup.js"

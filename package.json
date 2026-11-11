@@ -13,20 +13,17 @@
     "test": "node server/tests/test_api.js",
     "test:all": "node server/tests/test_api.js && node server/tests/verify_frontend_and_api.js"
   },
-  "keywords": [
-    "college",
-    "equipment",
-    "borrowing-system",
-    "inventory-management",
-    "university-laboratory",
-    "custodian",
-    "full-stack"
-  ],
-  "author": "CampusEquip Team",
-  "license": "MIT",
   "engines": {
-    "node": ">=22.0.0",
+    "node": "22.x",
     "npm": ">=10.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^9.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2"
   }
-  
 }
