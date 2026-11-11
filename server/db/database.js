@@ -2,13 +2,18 @@ const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure data directory exists
-const dataDir = path.join(__dirname, '..', 'data');
+// Railway persistent volumes can be mounted at /app/server/data.
+// Set DATABASE_PATH to keep the SQLite file on that mounted volume.
+const defaultDbPath = path.join(__dirname, '..', 'data', 'campusequip.db');
+const dbPath = process.env.DATABASE_PATH
+  ? path.resolve(process.env.DATABASE_PATH)
+  : defaultDbPath;
+const dataDir = path.dirname(dbPath);
+
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-const dbPath = path.join(dataDir, 'campusequip.db');
 const db = new DatabaseSync(dbPath);
 
 // Enable Foreign Keys and WAL mode for high performance and integrity
@@ -154,4 +159,3 @@ module.exports = {
   logAudit,
   createNotification
 };
-
