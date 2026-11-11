@@ -248,3 +248,46 @@ This project is released under the MIT License.
 
 #   e q u i p m e n t _ b o r r o w i n g  
  
+
+## Production deployment (Render)
+
+CampusEquip can run as **one Render Web Service**: Render builds the React/Vite frontend, then the Express server serves the frontend and API from the same domain. This keeps deployment simple and avoids frontend CORS configuration.
+
+### Render setup
+
+1. Push this repository to GitHub and open [Render](https://render.com).
+2. Choose **New + → Blueprint** and connect this repository. Render will read the root-level `render.yaml`.
+3. Review the Blueprint. It creates one Node.js Web Service and a **1 GB persistent disk** mounted at `/var/data`.
+4. SQLite needs a persistent disk. Render persistent disks require a paid service plan; a free web service has an ephemeral filesystem and is **not suitable for storing real CampusEquip records**.
+5. For this single-service setup, leave `CLIENT_URL` unset.
+6. Deploy. Render builds with `npm install && npm run build:client` and starts with `npm start`.
+7. When deployment finishes, open `https://YOUR-SERVICE.onrender.com/api/health`. It should return JSON containing `"status":"healthy"`.
+
+### Render environment variables
+
+The Blueprint configures these values:
+
+| Variable | Value |
+| --- | --- |
+| `NODE_ENV` | `production` |
+| `DATABASE_PATH` | `/var/data/campusequip.db` |
+| `JWT_SECRET` | Generated securely by Render |
+| `CLIENT_URL` | Optional; leave unset for the unified frontend/API domain |
+
+Do not expose `JWT_SECRET` in frontend variables or share it publicly.
+
+### Important database and security notes
+
+- The backend currently uses SQLite directly. The persistent disk is essential because Render's normal service filesystem is ephemeral. Keep the disk mounted at `/var/data` and do not change `DATABASE_PATH` unless you also change the disk mount.
+- The existing Supabase schema and transfer script do **not** switch the live API to PostgreSQL just by setting `SUPABASE_URL`.
+- The existing `supabase_schema_and_data.sql` starts by dropping six tables. **Do not run it on a Supabase project containing data unless you intentionally want those tables and records deleted.** Back up and review it first.
+- The startup script seeds demo data only when the database has no users. Do not run the standalone seed command against a production database with real users or transactions; the seed script may clear existing data.
+- Change or remove all demo accounts/passwords before inviting real users. Keep `JWT_SECRET` private.
+
+### Smoke test
+
+Test borrower registration/login, staff approval/dispatch/return workflows, admin inventory/category/user management, audit logs, nested-page refresh, and persistence after a Render redeploy. Confirm records remain after redeployment before opening the system to real users.
+
+### Optional: separate frontend hosting
+
+The recommended setup serves both frontend and backend from one Render Web Service. If you later host the frontend separately, set `VITE_API_URL` to the backend service origin (without `/api`) and set the backend's `CLIENT_URL` to the frontend origin. Do not put backend secrets in any `VITE_*` variable.

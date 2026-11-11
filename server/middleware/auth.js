@@ -1,7 +1,13 @@
 const jwt = require('jsonwebtoken');
 const { db } = require('../db/database');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'campusequip_super_secure_jwt_secret_key_2026_x89!';
+// Never use the development fallback secret in production.
+const JWT_SECRET = process.env.JWT_SECRET ||
+  (process.env.NODE_ENV === 'production' ? null : 'campusequip_local_development_secret_only');
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET must be set in production. Generate a long random secret and add it to the backend environment variables.');
+}
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -13,8 +19,6 @@ function authenticateToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    
-    // Check user in database
     const user = db.prepare('SELECT id, name, email, role, student_id, department, phone, status FROM users WHERE id = ?').get(decoded.id);
 
     if (!user) {
@@ -42,9 +46,9 @@ function requireRole(...allowedRoles) {
     }
 
     if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ 
-        success: false, 
-        message: `Access denied. Requires one of the following roles: [${allowedRoles.join(', ')}]. Your role: ${req.user.role}` 
+      return res.status(403).json({
+        success: false,
+        message: `Access denied. Requires one of the following roles: [${allowedRoles.join(', ')}]. Your role: ${req.user.role}`
       });
     }
 
@@ -77,4 +81,3 @@ module.exports = {
   optionalAuth,
   JWT_SECRET
 };
-

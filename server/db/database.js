@@ -2,13 +2,18 @@ const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure data directory exists
-const dataDir = path.join(__dirname, '..', 'data');
+// Render persistent disks should be mounted at /var/data.
+// Set DATABASE_PATH to the mounted persistent disk path.
+const defaultDbPath = path.join(__dirname, '..', 'data', 'campusequip.db');
+const dbPath = process.env.DATABASE_PATH
+  ? path.resolve(process.env.DATABASE_PATH)
+  : defaultDbPath;
+const dataDir = path.dirname(dbPath);
+
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-const dbPath = path.join(dataDir, 'campusequip.db');
 const db = new DatabaseSync(dbPath);
 
 // Enable Foreign Keys and WAL mode for high performance and integrity
@@ -154,4 +159,3 @@ module.exports = {
   logAudit,
   createNotification
 };
-
