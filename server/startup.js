@@ -1,5 +1,5 @@
 /**
- * startup.js — Smart production startup for Railway
+ * startup.js — Smart production startup for Render
  * Seeds the database only if it is empty, then starts the server.
  * This prevents wiping user data on every redeploy while ensuring
  * a fresh Railway instance always has demo data to work with.

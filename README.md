@@ -249,42 +249,45 @@ This project is released under the MIT License.
 #   e q u i p m e n t _ b o r r o w i n g  
  
 
-## Production deployment (Vercel + Railway)
+## Production deployment (Render)
 
-The current backend still uses SQLite. Deploy the React frontend and Express API as separate services, and keep SQLite on persistent storage.
+CampusEquip can run as **one Render Web Service**: Render builds the React/Vite frontend, then the Express server serves the frontend and API from the same domain. This keeps deployment simple and avoids frontend CORS configuration.
 
-### Railway — backend API
+### Render setup
 
-1. Deploy this repository to Railway from the **repository root** (not the `client` or `server` subfolder).
-2. Add a Railway Volume mounted at `/app/server/data`. This is essential: without persistent storage, SQLite data can disappear when the service is replaced or redeployed.
-3. Set these Railway service variables:
+1. Push this repository to GitHub and open [Render](https://render.com).
+2. Choose **New + → Blueprint** and connect this repository. Render will read the root-level `render.yaml`.
+3. Review the Blueprint. It creates one Node.js Web Service and a **1 GB persistent disk** mounted at `/var/data`.
+4. SQLite needs a persistent disk. Render persistent disks require a paid service plan; a free web service has an ephemeral filesystem and is **not suitable for storing real CampusEquip records**.
+5. For this single-service setup, leave `CLIENT_URL` unset.
+6. Deploy. Render builds with `npm install && npm run build:client` and starts with `npm start`.
+7. When deployment finishes, open `https://YOUR-SERVICE.onrender.com/api/health`. It should return JSON containing `"status":"healthy"`.
 
-   | Variable | Value |
-   | --- | --- |
-   | `NODE_ENV` | `production` |
-   | `JWT_SECRET` | A unique random secret of at least 32 bytes |
-   | `DATABASE_PATH` | `/app/server/data/campusequip.db` |
-   | `CLIENT_URL` | Your Vercel origin, e.g. `https://your-app.vercel.app` |
+### Render environment variables
 
-   Multiple allowed frontend origins can be comma-separated in `CLIENT_URL`.
-4. Build command: `npm install`. Start command: `npm start`.
-5. Generate a public Railway domain, then test `https://YOUR-RAILWAY-DOMAIN/api/health`. It should return `"status":"healthy"`.
+The Blueprint configures these values:
 
-### Vercel — frontend
+| Variable | Value |
+| --- | --- |
+| `NODE_ENV` | `production` |
+| `DATABASE_PATH` | `/var/data/campusequip.db` |
+| `JWT_SECRET` | Generated securely by Render |
+| `CLIENT_URL` | Optional; leave unset for the unified frontend/API domain |
 
-1. Import the same repository into Vercel.
-2. Set **Root Directory** to `client`.
-3. Framework preset: **Vite**; build command: `npm run build`; output directory: `dist`.
-4. Add environment variable `VITE_API_URL` with the Railway origin only, e.g. `https://your-api.up.railway.app` (do not append `/api`).
-5. Deploy. If you add client-side routes later, configure a Vercel rewrite so unknown paths serve `/index.html`.
+Do not expose `JWT_SECRET` in frontend variables or share it publicly.
 
 ### Important database and security notes
 
-- The Express controllers still use SQLite directly. The existing Supabase schema and transfer script do **not** switch the live API to PostgreSQL just by setting `SUPABASE_URL`.
+- The backend currently uses SQLite directly. The persistent disk is essential because Render's normal service filesystem is ephemeral. Keep the disk mounted at `/var/data` and do not change `DATABASE_PATH` unless you also change the disk mount.
+- The existing Supabase schema and transfer script do **not** switch the live API to PostgreSQL just by setting `SUPABASE_URL`.
 - The existing `supabase_schema_and_data.sql` starts by dropping six tables. **Do not run it on a Supabase project containing data unless you intentionally want those tables and records deleted.** Back up and review it first.
-- The seed script clears existing data before reseeding. Never run it against a production database with real users or transactions.
-- Change or remove all demo accounts/passwords before inviting real users. Keep `JWT_SECRET` private and never put backend secrets in Vercel's `VITE_*` variables.
+- The startup script seeds demo data only when the database has no users. Do not run the standalone seed command against a production database with real users or transactions; the seed script may clear existing data.
+- Change or remove all demo accounts/passwords before inviting real users. Keep `JWT_SECRET` private.
 
 ### Smoke test
 
-Test borrower registration/login, staff approval/dispatch/return workflows, admin inventory/category/user management, audit logs, nested-page refresh, and persistence after a Railway redeploy. Confirm records remain after redeployment before opening the system to users.
+Test borrower registration/login, staff approval/dispatch/return workflows, admin inventory/category/user management, audit logs, nested-page refresh, and persistence after a Render redeploy. Confirm records remain after redeployment before opening the system to real users.
+
+### Optional: separate frontend hosting
+
+The recommended setup serves both frontend and backend from one Render Web Service. If you later host the frontend separately, set `VITE_API_URL` to the backend service origin (without `/api`) and set the backend's `CLIENT_URL` to the frontend origin. Do not put backend secrets in any `VITE_*` variable.
